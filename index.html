@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ricser SRL · Seguimiento de repuestos, garantías y servicio técnico HanColor</title>
+<meta name="description" content="Importadores directos y exclusivos de HanColor. Seguí cada repuesto, garantía y servicio técnico de tu maquinaria en tiempo real.">
+<meta name="theme-color" content="#000f16">
+<meta name="robots" content="noindex, nofollow"><!-- client preview with demo data: remove when it goes live -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23eba42c' d='M0 0h100v3C60 25 35 50 23.5 77L0 65z'/%3E%3Cpath fill='%23db3a5b' d='M100 9v91H34.6C50 62 72 30 100 9z'/%3E%3Cpath fill='%2353c4f0' d='M0 73l23.5 27H0z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/site.css">
+<link rel="preload" as="image" href="assets/marca/logo-o.webp">
+<link rel="preload" as="image" href="assets/marca/logo-r.webp">
+<link rel="preload" as="image" href="assets/marca/logo-b.webp">
+<link rel="preload" as="image" href="assets/marca/logo-word.webp">
+<link rel="preload" as="image" href="assets/marca/logo-sub.webp">
+</head>
+<body>
+
+<!-- OPENING CINEMATIC: the logo is the first thing on screen, then the camera descends to the hero (js/cinema.js, intro) -->
+<div id="boot" role="status" aria-label="Cargando Ricser">
+  <div class="bt-plate"><i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i><i class="bt-edge"></i></div>
+  <div class="bt-stage">
+    <i class="bt-halo"></i>
+    <div class="bt-logo" role="img" aria-label="Ricser Printers &amp; Plotters">
+      <img class="bt-o" src="assets/marca/logo-o.webp" alt="" width="1600" height="402" fetchpriority="high" decoding="sync">
+      <img class="bt-r" src="assets/marca/logo-r.webp" alt="" width="1600" height="402" fetchpriority="high" decoding="sync">
+      <img class="bt-b" src="assets/marca/logo-b.webp" alt="" width="1600" height="402" fetchpriority="high" decoding="sync">
+      <div class="bt-text">
+        <img class="bt-word" src="assets/marca/logo-word.webp" alt="" width="1600" height="402" fetchpriority="high" decoding="sync">
+        <img class="bt-sub" src="assets/marca/logo-sub.webp" alt="" width="1600" height="402" fetchpriority="high" decoding="sync">
+      </div>
+    </div>
+    <div class="bt-bar"><i id="bootBar"></i></div>
+  </div>
+  <script>
+    /* Runs before the animation libraries arrive: the logo must not wait for the network to appear */
+    (function () {
+      var boot = document.getElementById('boot');
+      if (location.hash === '#portal') { boot.style.display = 'none'; return; }
+      // Reloading always starts from the logo, not from wherever the page was left
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
+      window.__bootT0 = performance.now();
+      var imgs = boot.querySelectorAll('img'), left = imgs.length;
+      function one() { if (--left <= 0) { window.__bootT0 = performance.now(); boot.classList.add('go'); } }
+      imgs.forEach(function (i) { if (i.complete) one(); else { i.addEventListener('load', one); i.addEventListener('error', one); } });
+    })();
+  </script>
+</div>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="mm-grid" aria-hidden="true"></div>
+<div id="cursor" aria-hidden="true"></div>
+
+<header id="top">
+  <a class="brand" href="#stage" data-go="s1" aria-label="Ricser, volver al inicio"><img src="assets/marca/ricser-logo-blanco.webp" alt="Ricser Printers &amp; Plotters" width="720" height="181"></a>
+  <nav id="scenes" aria-label="Escenas">
+    <a href="#stage" data-go="s1" class="on"><i>01</i><span>Awakening</span></a>
+    <a href="#stage" data-go="s2"><i>02</i><span>Anatomía</span></a>
+    <a href="#stage" data-go="s3"><i>03</i><span>Núcleo</span></a>
+    <a href="#stage" data-go="s4"><i>04</i><span>Telemetría</span></a>
+    <a href="#portal" data-go="portal"><i>05</i><span>Command Center</span></a>
+  </nav>
+  <a class="skip" href="#portal" data-go="portal">Entrar al portal <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3 8.5 8 13.500l5-5"/></svg></a>
+</header>
+
+<main>
+<!-- ============ CINEMA STAGE (pin + scrub) ============ -->
+<section id="stage" aria-label="Presentación de Ricser y HanColor">
+
+  <!-- optional AI video plates are injected here, see js/cinema.js -->
+  <div class="layer" id="lVideo" aria-hidden="true"></div>
+  <canvas class="flow" id="flowBack" aria-hidden="true"></canvas>
+
+  <!-- ESCENA 1: title plane, behind the machine -->
+  <div class="layer" id="lTitle">
+    <h1 class="mega"><span class="m m1"><span class="mi">CUT THE</span></span><span class="m m2"><span class="mi">DOWNTIME</span></span></h1>
+  </div>
+
+  <!-- Shared machine rig: scene 1 (3/4) rotates into scene 2 (front + X-ray) -->
+  <div class="layer" id="lMachine">
+    <div id="rigOuter"><div id="rig">
+      <div class="mview" id="v34">
+        <img class="v-glow" src="assets/equipos/dtfuv60-34-glow.webp" alt="" width="540" height="498">
+        <div class="v-photo">
+          <img src="assets/equipos/dtfuv60-34.webp" alt="Impresora HanColor DTF UV de 60 cm, vista tres cuartos" width="1452" height="1281">
+          <img class="rim" src="assets/equipos/dtfuv60-34-rim.webp" alt="" width="1452" height="1281">
+        </div>
+      </div>
+      <div class="mview" id="vF">
+        <img class="v-glow" src="assets/equipos/dtfuv60-front-glow.webp" alt="" width="540" height="423">
+        <div class="v-photo" id="fPhoto">
+          <img src="assets/equipos/dtfuv60-front.webp" alt="Impresora HanColor DTF UV de 60 cm, vista frontal" width="1120" height="755">
+          <img class="rim" src="assets/equipos/dtfuv60-front-rim.webp" alt="" width="1120" height="755">
+        </div>
+        <div class="v-photo" id="fXray"><img src="assets/equipos/dtfuv60-front-xray.webp" alt="Vista en rayos X de la misma impresora" width="1120" height="755"></div>
+
+        <svg id="schema" viewBox="0 0 1000 674" aria-hidden="true">
+          <g class="sch">
+            <!-- carro y cabezales -->
+            <path pathLength="1" d="M90 168H910"/>
+            <path pathLength="1" d="M380 150h240v38H380z"/>
+            <path pathLength="1" d="M404 158h34v22h-34zM450 158h34v22h-34zM516 158h34v22h-34zM562 158h34v22h-34z"/>
+            <!-- bombas y mangueras de tinta -->
+            <path pathLength="1" d="M152 40a18 18 0 1 0 .01 0M196 40a18 18 0 1 0 .01 0"/>
+            <path pathLength="1" d="M152 76C152 124 300 110 404 158"/>
+            <path pathLength="1" d="M174 76C174 118 330 104 450 158"/>
+            <path pathLength="1" d="M196 76C196 112 380 100 516 158"/>
+            <!-- servo y correa -->
+            <path pathLength="1" d="M270 240a30 30 0 1 0 .01 0M270 256a14 14 0 1 0 .01 0"/>
+            <path pathLength="1" d="M270 240C420 232 610 232 742 240M270 300C420 306 610 306 742 300"/>
+            <path pathLength="1" d="M742 240a30 30 0 1 1-.01 0"/>
+            <!-- módulo UV -->
+            <path pathLength="1" d="M810 396V320C810 260 700 214 620 188"/>
+            <path pathLength="1" d="M736 396h160v76H736z"/>
+          </g>
+          <g id="nozzle"><circle cx="500" cy="165" r="9"/><circle cx="500" cy="165" r="3.200"/><path d="M500 146v10M500 174v10M481 165h10M509 165h10"/></g>
+          <g class="leaders">
+            <path class="ld" data-c="1" pathLength="1" d="M500 165L640 44H1034"/>
+            <path class="ld" data-c="2" pathLength="1" d="M174 58L120 96H-34"/>
+            <path class="ld" data-c="3" pathLength="1" d="M270 270L150 340H-34"/>
+            <path class="ld" data-c="4" pathLength="1" d="M816 434L880 372H1034"/>
+            <g class="pts">
+              <g data-c="1"><circle cx="500" cy="165" r="5"/><text x="500" y="143">1</text></g>
+              <g data-c="2"><circle cx="174" cy="58" r="5"/><text x="174" y="36">2</text></g>
+              <g data-c="3"><circle cx="270" cy="270" r="5"/><text x="270" y="248">3</text></g>
+              <g data-c="4"><circle cx="816" cy="434" r="5"/><text x="816" y="412">4</text></g>
+            </g>
+          </g>
+        </svg>
+        <div id="beam" aria-hidden="true"></div>
+      </div>
+    </div></div>
+  </div>
+
+  <canvas class="flow" id="flowFront" aria-hidden="true"></canvas>
+
+  <!-- Outline copy of the title in front of the machine -->
+  <div class="layer" id="lOutline" aria-hidden="true">
+    <div class="mega outline"><span class="m m1"><span class="mi">CUT THE</span></span><span class="m m2"><span class="mi">DOWNTIME</span></span></div>
+  </div>
+
+  <!-- ESCENA 1: copy -->
+  <div class="layer" id="lCopy">
+    <div class="s1-copy">
+      <p class="eyebrow">Ricser SRL · Importador directo y exclusivo HanColor</p>
+      <p class="lede">Repuestos, garantías y servicio técnico de tu maquinaria, seguidos en tiempo real.</p>
+      <form id="quickTrk" class="quick" role="search" aria-label="Rastreo rápido">
+        <label for="quickIn">Rastreo rápido</label>
+        <div class="quick-r">
+          <input id="quickIn" value="GAR-2026-0042" autocomplete="off" spellcheck="false">
+          <button type="submit" aria-label="Rastrear caso"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M8.500 3l5 5-5 5"/></svg></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ESCENA 2: heading + callouts -->
+  <div class="layer" id="lS2">
+    <div class="s2-head">
+      <p class="eyebrow">02 · Anatomía de precisión</p>
+      <h2>Lo que frena una planta es <em>una sola pieza.</em></h2>
+    </div>
+    <div id="coLayer">
+      <article class="co co-r" data-c="1" style="--y:-1%"><i>01</i><h3>Cabezales de impresión</h3><p>Boquillas microscópicas. Reposición aérea desde fábrica, con guía AWB.</p></article>
+      <article class="co co-l" data-c="2" style="--y:8%"><i>02</i><h3>Bombas de tinta</h3><p>Circuito UV/DTF: presión, purga y mangueras bajo control.</p></article>
+      <article class="co co-l" data-c="3" style="--y:44%"><i>03</i><h3>Motores servo</h3><p>Avance de film y carro. De ellos depende el registro.</p></article>
+      <article class="co co-r" data-c="4" style="--y:47%"><i>04</i><h3>Módulo UV LED</h3><p>Curado en línea. Driver y lámpara con trazabilidad por serie.</p></article>
+      <article class="co co-l co-inset" data-c="5" style="--y:74%">
+        <svg viewBox="0 0 220 96" aria-hidden="true">
+          <path class="opt" d="M6 22h66v20H6zM6 32h-4"/>
+          <path class="opt-b" pathLength="1" d="M72 32h78v40h40"/>
+          <path class="opt" d="M142 24l16 16M142 64l16 16M186 62v20"/>
+          <path class="opt" d="M180 62h20M180 82h20"/>
+        </svg>
+        <i>05</i><h3>Óptica láser</h3><p>Línea de corte: tubo, espejos y lente, en un mismo circuito de repuestos.</p>
+      </article>
+    </div>
+    <p class="s2-note">Esquema ilustrativo sobre fotografía real.</p>
+  </div>
+
+  <!-- ESCENA 3: halftone core -->
+  <div class="layer" id="s3">
+    <canvas id="halftone" aria-label="Malla de puntos interactiva: mira de registro, símbolo Ricser y mapa de distribución" role="img"></canvas>
+    <svg id="routes" aria-hidden="true"></svg>
+    <div class="s3-copy">
+      <div class="cap" id="capA"><p class="eyebrow">03 · El núcleo Ricser</p><h2>Todo parte de <em>un punto de registro.</em></h2><p>Tu equipo, su serie y su historial, alineados en un solo lugar.</p></div>
+      <div class="cap" id="capB"><p class="eyebrow">03 · Importación directa</p><h2>De fábrica a tu planta, <em>sin intermediarios.</em></h2><p>Ricser importa HanColor en forma directa y exclusiva.</p></div>
+      <div class="cap" id="capC"><p class="eyebrow">03 · Red de distribución</p><h2>Aire y tierra, <em>en una sola línea.</em></h2><p class="hint-mouse">Mové el cursor: la malla responde.</p></div>
+    </div>
+  </div>
+
+  <!-- ESCENA 4: tracker -->
+  <div class="layer" id="s4"><div id="s4in">
+    <div class="s4-top">
+      <div>
+        <p class="eyebrow">04 · Telemetría logística</p>
+        <h2>Cada repuesto, <em>en vivo.</em></h2>
+      </div>
+      <div class="s4-search">
+        <form id="trkForm" role="search">
+          <label for="trkIn">Código de caso, pedido o guía aérea</label>
+          <div class="trk-row">
+            <input id="trkIn" placeholder="GAR-2026-0042" autocomplete="off" spellcheck="false" aria-describedby="trkMsg">
+            <button class="btn" type="submit">Rastrear</button>
+          </div>
+        </form>
+        <p id="trkMsg" role="status"></p>
+        <div class="trk-quick">
+          <button type="button" class="chip" data-code="GAR-2026-0042">GAR-2026-0042</button>
+          <button type="button" class="chip" data-code="AWB 176-4410 2290">AWB 176-4410 2290</button>
+          <span id="trkEq" role="group" aria-label="Elegir un equipo"></span>
+        </div>
+      </div>
+    </div>
+    <div class="cockpit glass" id="cockpit"></div>
+  </div></div>
+
+  <!-- ESCENA 5: landing frame of portal #2. When the pin releases the app scrolls up from below it -->
+  <div class="layer" id="s5">
+    <div class="s5-in">
+      <p class="eyebrow">05 · Atravesaste el portal</p>
+      <p class="s5-t">COMMAND<br>CENTER</p>
+      <p class="s5-s">Cliente, equipo interno y fábrica, sobre los mismos datos.</p>
+      <p class="s5-go"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3 8.500l5 5 5-5"/></svg> Seguí bajando</p>
+    </div>
+  </div>
+
+  <div id="iris" aria-hidden="true"></div>
+
+  <!-- HUD -->
+  <div id="hud" aria-hidden="true">
+    <i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>
+    <div class="hud-a">
+      <p class="hud-h">Telemetría Ricser <b class="live">En línea</b></p>
+      <ul id="hudNodes"></ul>
+    </div>
+    <div class="hud-b">
+      <p class="hud-h">Importación directa</p>
+      <p>ORIGEN&nbsp; FÁBRICA HANCOLOR</p>
+      <p>DESTINO EZE 34°49′S 58°32′O</p>
+      <p class="hud-xy">CURSOR&nbsp; <span id="hudXY">0000 · 0000</span></p>
+    </div>
+    <div class="hud-c">
+      <p class="hud-scn"><b id="hudN">01</b>/05 <span id="hudName">THE AWAKENING</span></p>
+    </div>
+    <div class="hud-bar"><i id="hudBar"></i></div>
+  </div>
+</section>
+
+<!-- ============ ESCENA 5: COMMAND CENTER (app) ============ -->
+<section id="portal" aria-label="Command Center de Ricser">
+  <div class="cc-bar">
+    <div class="cc-tabs" role="tablist" aria-label="Vistas del portal">
+      <button role="tab" id="tab-cli" data-v="cli" aria-controls="cli" aria-selected="true">Portal del cliente</button>
+      <button role="tab" id="tab-int" data-v="int" aria-controls="int" aria-selected="false" tabindex="-1">Panel interno</button>
+      <button role="tab" id="tab-fab" data-v="fab" aria-controls="fab" aria-selected="false" tabindex="-1">Fábrica HanColor</button>
+      <button role="tab" id="tab-db" data-v="db" aria-controls="db" aria-selected="false" tabindex="-1">Base de datos</button>
+    </div>
+    <p class="cc-demo">Prototipo · datos de demostración</p>
+  </div>
+
+  <div class="cc-main">
+    <!-- 1 · CLIENTE -->
+    <section id="cli" class="view on" role="tabpanel" aria-labelledby="tab-cli">
+      <div class="v-head"><div><p class="eyebrow">Portal del cliente</p><h2>Hola, Gráfica Del Plata</h2></div><p class="v-sub">Elegí un equipo para ver su historial o pedir un servicio.</p></div>
+      <div class="cli-grid"><div id="eqs" aria-label="Mis equipos"></div><div id="det"></div></div>
+    </section>
+
+    <!-- 2 · INTERNO -->
+    <section id="int" class="view" role="tabpanel" aria-labelledby="tab-int" hidden>
+      <div class="v-head"><div><p class="eyebrow">Ricser SRL · Admin</p><h2>Panel interno</h2></div><p class="v-sub">Lo que cambies acá se refleja al instante en el portal del cliente y en el rastreo. Costos, margen y notas nunca salen de esta vista.</p></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="panel glass tw" data-lenis-prevent-horizontal><table><thead><tr><th>Cliente / equipo</th><th>Servicio</th><th>Estado (visible)</th><th>Técnico</th><th>Costo USD</th><th>Precio USD</th><th>Margen</th><th>Nota interna</th></tr></thead><tbody id="tick"></tbody></table></div>
+    </section>
+
+    <!-- 3 · FÁBRICA -->
+    <section id="fab" class="view" role="tabpanel" aria-labelledby="tab-fab" hidden>
+      <div class="v-head"><div><p class="eyebrow">HanColor Factory</p><h2>Portal del fabricante</h2></div><p class="v-sub">Acceso limitado: solo casos de garantía. Sin datos de clientes, precios ni notas internas.</p></div>
+      <div class="panel glass tw" data-lenis-prevent-horizontal><table><thead><tr><th>Caso</th><th>Equipo</th><th>Pieza y falla</th><th>Estado del caso</th><th>Guía aérea (AWB)</th></tr></thead><tbody id="fabT"></tbody></table></div>
+    </section>
+
+    <!-- 4 · BASE DE DATOS -->
+    <section id="db" class="view" role="tabpanel" aria-labelledby="tab-db" hidden>
+      <div class="v-head"><div><p class="eyebrow">Arquitectura</p><h2>Modelo de datos</h2></div><p class="v-sub">Una tabla central de eventos concentra el historial de cada equipo. Cada tipo de servicio extiende ese evento con sus propios datos.</p></div>
+      <div class="db-filter" role="group" aria-label="Filtrar campos por visibilidad" id="dbFilter"></div>
+      <div class="panel glass er" data-lenis-prevent-horizontal><svg id="erMap" viewBox="0 0 1000 340" role="group" aria-label="Relaciones entre tablas. Elegí una tabla para ver sus relaciones."></svg></div>
+      <div class="tables" id="tables"></div>
+    </section>
+  </div>
+
+  <footer class="cc-foot">
+    <div class="fleet" aria-hidden="true"><div class="fleet-track" id="fleet"></div></div>
+    <div class="foot-r">
+      <img src="assets/marca/ricser-logo-blanco.webp" alt="Ricser Printers &amp; Plotters" width="720" height="181" loading="lazy">
+      <p>Importadores directos y exclusivos de HanColor.</p>
+      <p class="mono">Prototipo funcional. Los datos se reinician al recargar.</p>
+    </div>
+  </footer>
+</section>
+</main>
+
+<dialog id="dlg" aria-labelledby="dt">
+  <form method="dialog" id="dlgF" data-lenis-prevent>
+    <h3 id="dt">Nueva solicitud</h3>
+    <p class="d-sub mono" id="dsub"></p>
+    <div class="opts" id="opts"></div>
+    <div id="extra"></div>
+    <label class="f">Contanos qué necesitás<textarea id="note" rows="3" placeholder="Ej.: la impresora no toma el perfil de color nuevo"></textarea></label>
+    <div class="d-foot"><b id="tot"></b><span class="d-acts"><button type="button" class="btn ghost" id="cx">Cancelar</button><button type="submit" class="btn" id="ok">Enviar solicitud</button></span></div>
+  </form>
+</dialog>
+<div id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
+<script src="js/store.js"></script>
+<script src="js/tracker.js"></script>
+<script src="js/portal.js"></script>
+<script src="js/bg.js"></script>
+<script src="js/flow.js"></script>
+<script src="js/halftone.js"></script>
+<script src="js/cinema.js"></script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+/* Scroll direction: Lenis + GSAP ScrollTrigger.
+   One pinned stage with a single scrubbed master timeline (1 timeline unit = 1 viewport of scroll).
+   Scenes overlap inside the stage, which is what lets each portal reveal the next scene from inside the previous one. */
+(() => {
+  const html = document.documentElement;
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+
+  /* Optional AI video plates (see PROMPTS-VIDEO-IA.md). They play over the procedural background during the
+     given timeline range. Example: { src: 'assets/video/hero.mp4', from: 0, to: 1.6, opacity: .6 } */
+  const VIDEO_PLATES = [];
+
+  const TOTAL = 9.8;
+  const LABELS = { s1: 0, s2: 2.2, s3: 4.95, s4: 7.65 };
+  const P2 = 8.6; // start of portal #2
+  const NAMES = [[0, '01', 'THE AWAKENING', 's1'], [1.6, '02', 'ANATOMÍA DE PRECISIÓN', 's2'], [4.5, '03', 'EL NÚCLEO RICSER', 's3'], [7.1, '04', 'TELEMETRÍA LOGÍSTICA', 's4'], [P2 + .5, '05', 'COMMAND CENTER', 'portal']];
+
+  // Shared state read by the WebGL/canvas layers and written by the timeline
+  const S = { flow: .22, ring: 0, beam: 0, word: 0, drop: 0, morph: 0, blow: 0, htZoom: .55, ringY: -.36, ringX: 0, ringS: 1, mx: 0, my: 0 };
+
+  Tracker.init();
+  Portal.init();
+  hudNodes();
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ?static previews the fallback that reduced-motion users get
+  if (!window.gsap || !window.ScrollTrigger || !window.Lenis || reduce || location.search.includes('static')) return staticMode();
+
+  gsap.registerPlugin(ScrollTrigger);
+  ScrollTrigger.config({ ignoreMobileResize: true });
+
+  /* ---------- Lenis, driven by the GSAP ticker ---------- */
+  const lenis = new Lenis({ lerp: .085, smoothWheel: true, wheelMultiplier: .9 });
+  window.__lenis = lenis;
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  const deepLink = location.hash === '#portal';
+  let tl = null, st = null, bgPaused = false, hudIdx = -1, played = false, measureA2 = null;
+  const irisEl = $('#iris');
+
+  if (deepLink) gsap.set('#boot', { display: 'none' }); else lenis.stop();
+
+  // Any input during the opening shortens it: nobody gets held back from the page
+  const LOGO_HOLD = 2100;
+  const SKIP_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+  let skipped = false, endHold = () => {}, introTl = null;
+  const onSkip = () => { skipped = true; endHold(); introTl?.timeScale(3.5); };
+  if (!deepLink) SKIP_EVENTS.forEach(e => window.addEventListener(e, onSkip, { passive: true }));
+
+  bootSequence(start);
+
+  function bootSequence(cb) {
+    const imgs = $$('#stage img');
+    const p = { v: 0 }; let n = 0;
+    const tick = () => {
+      n++;
+      gsap.to(p, { v: n / imgs.length * 100, duration: .4, overwrite: true, onUpdate: () => {
+        $('#bootBar').style.transform = `scaleX(${p.v / 100})`;
+      } });
+    };
+    imgs.forEach(i => { if (i.complete) tick(); else { i.addEventListener('load', tick, { once: true }); i.addEventListener('error', tick, { once: true }); } });
+    const fonts = document.fonts ? Promise.all([document.fonts.load('800 40px Archivo'), document.fonts.load('500 14px "JetBrains Mono"')]).catch(() => {}) : Promise.resolve();
+    const decoded = Promise.all(imgs.map(i => (i.decode ? i.decode().catch(() => {}) : null)));
+    // The logo stays until the page is ready, and long enough to finish assembling
+    const hold = new Promise(r => {
+      if (deepLink || skipped) return r();
+      endHold = r;
+      setTimeout(r, Math.max(0, LOGO_HOLD - (performance.now() - (window.__bootT0 || 0))));
+    });
+    Promise.race([Promise.all([fonts, decoded]), new Promise(r => setTimeout(r, 6000))]).then(() => hold).then(cb);
+  }
+
+  function start() {
+    RicserBG.init($('#bg'));
+    Flow.init($('#flowBack'), $('#flowFront'));
+    if (!Halftone.init($('#halftone'))) html.classList.add('no-webgl');
+    videoPlates();
+
+    const mm = gsap.matchMedia();
+    mm.add({ desk: '(min-width: 861px)', mob: '(max-width: 860px)' }, ctx => buildTimeline(!!ctx.conditions.mob));
+
+    ScrollTrigger.create({ trigger: '#portal', start: 'top 30%', end: 'max', onToggle: self => { bgPaused = self.isActive; } });
+
+    gsap.ticker.add(render);
+    pointer();
+    wireNav();
+    window.addEventListener('resize', debounce(onResize, 180));
+
+    ScrollTrigger.refresh();
+    // The pin adds its spacer after Lenis has measured the page: its scroll limit must be updated
+    lenis.resize();
+    ScrollTrigger.addEventListener('refresh', () => { lenis.resize(); measureA2?.(); if (tl) { hudIdx = -1; updateHud(tl.time()); } });
+    if (deepLink) { S.ring = 0; S.beam = .9; RicserBG.draw(S, 3); lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() }); return; }
+    intro();
+  }
+
+  /* ---------- Opening cinematic ----------
+     The logo assembles first (CSS in site.css, so it does not depend on the network). Then the camera descends:
+     the wall holding the logo rises, the logo travels to its place in the header, and the floor, the machine and
+     the air come up from below. Everything moves upward on screen because the viewer is going down. */
+  function intro() {
+    const boot = $('#boot'), logo = $('.bt-logo');
+    const from = logo.getBoundingClientRect(), to = $('.brand img').getBoundingClientRect();
+    const H = innerHeight, D = 1.6, restY = S.ringY, ease = 'expo.inOut';
+
+    gsap.set('.brand, #scenes, .skip', { autoAlpha: 0 });
+    S.ringY = restY - 1.25; S.drop = 1.25; S.flow = .75;
+
+    const i = introTl = gsap.timeline({
+      onComplete: () => {
+        gsap.set(boot, { display: 'none' });
+        SKIP_EVENTS.forEach(e => window.removeEventListener(e, onSkip));
+      },
+    });
+    i.timeScale(skipped ? 3.5 : 1);
+    i.to('.bt-bar', { autoAlpha: 0, duration: .22 }, 0)
+      .set('.bt-edge', { opacity: 1 }, .05)
+      .to('.bt-plate', { yPercent: -100, duration: D, ease }, .05)
+      .to('.bt-halo', { autoAlpha: 0, duration: .6, ease: 'power2.in' }, .05)
+      .to(logo, {
+        x: to.left + to.width / 2 - (from.left + from.width / 2),
+        y: to.top + to.height / 2 - (from.top + from.height / 2),
+        scale: to.width / from.width,
+        duration: D, ease,
+      }, .05)
+      .to(S, { ringY: restY, drop: 0, duration: D + .1, ease }, .05)
+      .to(S, { ring: 1, beam: 1, duration: D, ease: 'power2.out' }, .1)
+      .to(S, { flow: .22, duration: D - .3, ease: 'power2.inOut' }, .3)
+      .fromTo('.mm-grid', { y: H * .4 }, { y: 0, duration: D + .05, ease, clearProps: 'transform' }, .05)
+      .fromTo('#rigOuter', { y: H * .72, autoAlpha: .25 }, { y: 0, autoAlpha: 1, duration: D + .35, ease }, .05)
+      .from('.m1 .mi', { yPercent: 112, duration: 1.15, ease: 'expo.out' }, D * .6)
+      .from('.m2 .mi', { yPercent: 112, duration: 1.15, ease: 'expo.out' }, D * .6 + .09)
+      .from('.s1-copy > *', { y: 18, autoAlpha: 0, duration: .55, stagger: .07, ease: 'power3.out', clearProps: 'transform,opacity,visibility' }, D * .85)
+      .from('#hud', { autoAlpha: 0, duration: .6, clearProps: 'opacity,visibility' }, D * .9)
+      .to('#scenes, .skip', { autoAlpha: 1, duration: .5, clearProps: 'opacity,visibility' }, D * .85)
+      // The flying logo lands exactly over the header logo and hands over to it
+      .set('.brand', { autoAlpha: 1 }, D + .06)
+      .set(logo, { autoAlpha: 0 }, D + .07)
+      .call(() => { boot.style.pointerEvents = 'none'; lenis.start(); }, null, D + .08);
+  }
+
+  /* ---------- Master timeline ---------- */
+  function buildTimeline(isMob) {
+    const stage = $('#stage'), rigOuter = $('#rigOuter');
+    const heroScale = isMob ? 1.3 : 1.12;
+    S.ringY = isMob ? -.2 : -.36; S.ringS = isMob ? .6 : 1;
+    const heroX = isMob ? 0 : innerWidth * .085; // leaves "CUT" clear of the machine
+    S.ringX = heroX / stage.offsetHeight;
+
+    // Initial state
+    gsap.set('#v34', { rotationY: 7, transformOrigin: '50% 60%' });
+    gsap.set('#vF', { autoAlpha: 0, rotationY: 34, transformOrigin: '50% 60%' });
+    gsap.set('#rig', { scale: heroScale, x: heroX, transformOrigin: '50% 72%' });
+    gsap.set('#lS2, .s2-head, .s2-note, .co, .pts > g, .leaders', { autoAlpha: 0 });
+    gsap.set('#s3, #s4, #s5, #routes, .cap', { autoAlpha: 0 });
+    gsap.set('#nozzle', { opacity: 0 });
+    gsap.set('.sch path, .ld, .opt-b', { strokeDasharray: 1, strokeDashoffset: 1 });
+    S.morph = 0; S.blow = 0; S.word = 0;
+
+    const scan = { p: 0 }, fX = $('#fXray'), fP = $('#fPhoto'), beam = $('#beam');
+    const applyScan = () => {
+      const p = scan.p * 100;
+      fX.style.clipPath = `inset(0 0 ${100 - p}% 0)`;
+      fP.style.clipPath = `inset(${p}% 0 0 0)`;
+      beam.style.top = p + '%';
+      beam.style.opacity = scan.p > .001 && scan.p < .999 ? 1 : 0;
+    };
+    applyScan();
+
+    const ir1 = { r: 0 }, ir2 = { r: 0 };
+    let a2 = { x: innerWidth / 2, y: innerHeight / 2 };
+    const applyIris = (el, r, x, y) => {
+      const R = r * Math.hypot(innerWidth, innerHeight) * 1.02;
+      el.style.clipPath = r >= .999 ? 'none' : `circle(${R}px at ${x}px ${y}px)`;
+      const live = r > .001 && r < .55; // past that the ring is outside the screen
+      irisEl.style.opacity = live ? 1 : 0;
+      if (live) irisEl.style.transform = `translate(${x}px,${y}px) scale(${R / 50})`;
+    };
+    const s3 = $('#s3'), s5 = $('#s5');
+    applyIris(s3, 0, 0, 0); applyIris(s5, 0, 0, 0);
+
+    // Anchor of the printhead in layout coordinates: the zoom has to land exactly on it
+    const nozzleY = .245;
+    const anchorOffsetY = () => stage.offsetHeight / 2 - (rigOuter.offsetTop + rigOuter.offsetHeight * nozzleY);
+
+    tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
+
+    /* ===== ESCENA 1 · THE AWAKENING ===== */
+    tl.to('.m1', { xPercent: -24, duration: 1.35, ease: 'power1.in' }, 0)
+      .to('.m2', { xPercent: 24, duration: 1.35, ease: 'power1.in' }, 0)
+      .to('#lTitle, #lOutline', { autoAlpha: 0, duration: .4 }, .85)
+      .to('#lCopy', { autoAlpha: 0, y: -24, duration: .3 }, .18)
+      .fromTo(S, { flow: .22 }, { flow: 1, duration: .75, ease: 'power2.in', immediateRender: false }, 0)
+      .to(S, { flow: .3, duration: .6, ease: 'power2.out' }, .85)
+      .fromTo(S, { word: 0 }, { word: 1, duration: .5, ease: 'power2.out', immediateRender: false }, .22)
+      .to(S, { word: 2, duration: .45, ease: 'power2.in' }, .9)
+      .to('#rig', { scale: heroScale * 1.1, duration: 1.1, ease: 'power1.inOut' }, 0)
+      .to('#v34', { rotationY: -5, duration: 1.1, ease: 'power1.inOut' }, 0)
+      .to('.hud-a, .hud-b', { autoAlpha: 0, duration: .2 }, 1.2);
+
+    // Rotation: the 3/4 photo turns toward the viewer and hands over to the front photo of the same model
+    tl.to('#v34', { rotationY: -36, duration: .5, ease: 'power2.in' }, 1.1)
+      .to('#v34', { autoAlpha: 0, duration: .16, ease: 'power1.in' }, 1.42)
+      .to('#vF', { autoAlpha: 1, duration: .16, ease: 'power1.out' }, 1.36)
+      .to('#vF', { rotationY: 0, duration: .36, ease: 'power2.out' }, 1.36)
+      .to('#rig', { scale: 1, x: 0, duration: .6, ease: 'power2.inOut' }, 1.1)
+      .to(S, { ringX: 0, duration: .6, ease: 'power2.inOut' }, 1.1)
+      .fromTo(S, { ring: 1 }, { ring: .55, duration: .5, immediateRender: false }, 1.2);
+
+    /* ===== ESCENA 2 · ANATOMÍA + RAYOS X ===== */
+    tl.set('#lS2', { autoAlpha: 1 }, 1.7)
+      .fromTo('.s2-head', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power2.out' }, 1.72)
+      .to('.mm-grid', { opacity: .9, duration: .4 }, 1.8)
+      .to(scan, { p: 1, duration: .85, ease: 'power1.inOut', onUpdate: applyScan }, 1.95)
+      .set('#fPhoto', { autoAlpha: 0 }, 2.82)
+      .to('.sch path', { strokeDashoffset: 0, duration: .32, stagger: .05, ease: 'power1.inOut' }, 2.2)
+      .set('.leaders', { autoAlpha: 1 }, 2.7)
+      .to('.s2-note', { autoAlpha: 1, duration: .1 }, 2.8);
+
+    [1, 2, 3, 4, 5].forEach((c, k) => {
+      const at = 2.78 + k * .21;
+      const co = `.co[data-c="${c}"]`, side = $(co).classList.contains('co-l') ? -20 : 20;
+      if (c < 5) {
+        tl.to(`.ld[data-c="${c}"]`, { strokeDashoffset: 0, duration: .15, ease: 'power1.out' }, at);
+        tl.fromTo(`.pts > [data-c="${c}"]`, { autoAlpha: 0 }, { autoAlpha: 1, duration: .05 }, at);
+      } else tl.to('.opt-b', { strokeDashoffset: 0, duration: .2 }, at + .05);
+      tl.fromTo(co, { autoAlpha: 0, x: isMob ? 0 : side, y: isMob ? 14 : 0 }, { autoAlpha: 1, x: 0, y: 0, duration: .13, ease: 'power2.out' }, at + .06);
+      if (isMob && c < 5) tl.to(co, { autoAlpha: 0, y: -10, duration: .05 }, at + .19);
+    });
+
+    /* ===== PORTAL #1 · into the printhead nozzle =====
+       Scrolling back, this layer is painted again at whatever zoom it has at that moment, and the browser keeps
+       that resolution. So the zoom stays moderate and the layer is hidden as soon as the iris covers the screen
+       (t = 4.64): above that point it would only cost memory and freeze the page on the way up. */
+    tl.to('.co, .pts, .ld, .s2-head, .s2-note', { autoAlpha: 0, duration: .12 }, 3.92)
+      .to('.sch', { autoAlpha: 0, duration: .2 }, 3.96)
+      .to('#vF .v-glow', { autoAlpha: 0, duration: .15 }, 3.95)
+      .to('#nozzle', { opacity: 1, duration: .1 }, 3.95)
+      .set('#rig', { transformOrigin: `50% ${nozzleY * 100}%` }, 3.92)
+      .to('#rig', { scale: isMob ? 20 : 16, y: anchorOffsetY, duration: .82, ease: 'power3.in' }, 3.95)
+      .to(S, { ring: 0, flow: 0, duration: .35 }, 3.95)
+      .set(s3, { autoAlpha: 1 }, 4.3)
+      .to(ir1, { r: 1, duration: .46, ease: 'power2.in', onUpdate: () => applyIris(s3, ir1.r, innerWidth / 2, stage.offsetHeight / 2) }, 4.3)
+      .fromTo(S, { htZoom: .55 }, { htZoom: 1, duration: .62, ease: 'power2.out', immediateRender: false }, 4.3)
+      .set('#lMachine, #lS2, #flowFront, #flowBack', { autoAlpha: 0 }, 4.64);
+
+    /* ===== ESCENA 3 · NÚCLEO HALFTONE ===== */
+    const capIO = (id, a, b) => {
+      tl.fromTo(id, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .15, ease: 'power2.out' }, a)
+        .to(id, { autoAlpha: 0, y: -18, duration: .12, ease: 'power2.in' }, b);
+    };
+    capIO('#capA', 4.68, 5.02);
+    tl.to(S, { morph: 1, duration: .68, ease: 'power1.inOut' }, 5.05);
+    capIO('#capB', 5.55, 5.92);
+    tl.to(S, { morph: 2, duration: .68, ease: 'power1.inOut' }, 5.96)
+      .to('#routes', { autoAlpha: 1, duration: .2 }, 6.5);
+    capIO('#capC', 6.42, 6.98);
+
+    tl.to('#routes', { autoAlpha: 0, duration: .12 }, 6.95)
+      .to(S, { blow: 1, duration: .5, ease: 'power2.in' }, 6.95)
+      .fromTo(S, { beam: 1 }, { beam: .75, duration: .1, immediateRender: false }, 6.95)
+      .to(s3, { autoAlpha: 0, duration: .32 }, 7.12);
+
+    /* ===== ESCENA 4 · TELEMETRÍA ===== */
+    tl.set('#s4', { autoAlpha: 1 }, 7.12)
+      .to('.hud-c', { autoAlpha: 0, duration: .1 }, 7.1)
+      .fromTo('.s4-top > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .2, stagger: .04, ease: 'power2.out' }, 7.18)
+      .fromTo('#cockpit', { autoAlpha: 0, y: 46 }, { autoAlpha: 1, y: 0, duration: .24, ease: 'power2.out' }, 7.26)
+      .to(S, { beam: 1, duration: P2 - 7.5 }, 7.5); // the light keeps answering the scroll while the tracker holds still
+
+    /* ===== PORTAL #2 · into the final registration mark =====
+       The tracker only zooms a little and fades: the iris growing out of the mark does the deep zoom.
+       Zooming the whole tracker froze the page for seconds when scrolling back up (see the note on portal #1). */
+    const cam2 = { p: 0 }, Z2 = isMob ? 5 : 4, s4in = $('#s4in');
+    // Marker position with the camera at rest, measured only when it can change (not on every scroll tick)
+    measureA2 = () => {
+      const cp = $('#cockpit'), keep = [s4in.style.transform, cp.style.transform];
+      s4in.style.transform = cp.style.transform = 'none';
+      a2 = Tracker.anchor();
+      const b = s4in.getBoundingClientRect();
+      s4in.style.transform = keep[0]; cp.style.transform = keep[1];
+      s4in.style.transformOrigin = `${a2.x - b.left}px ${a2.y - b.top}px`;
+    };
+    measureA2();
+    Tracker.onRender(measureA2);
+    // The camera slides the marker to the middle of the screen while it dives in
+    const slide = () => { const q = Math.min(1, cam2.p / .55); return q * q * (3 - 2 * q); };
+    const applyCam2 = () => {
+      const k = slide();
+      gsap.set(s4in, { x: (innerWidth / 2 - a2.x) * k, y: (stage.offsetHeight / 2 - a2.y) * k, scale: 1 + (Z2 - 1) * cam2.p ** 3.5 });
+    };
+    const center2 = () => {
+      const k = slide();
+      return [a2.x + (innerWidth / 2 - a2.x) * k, a2.y + (stage.offsetHeight / 2 - a2.y) * k];
+    };
+    tl.to(cam2, { p: 1, duration: .78, onUpdate: applyCam2 }, P2)
+      .to('#s4in > *', { autoAlpha: 0, duration: .2 }, P2 + .42)
+      .set(s5, { autoAlpha: 1 }, P2 + .3)
+      .to(ir2, { r: 1, duration: .46, ease: 'power2.in', onUpdate: () => { const c = center2(); applyIris(s5, ir2.r, c[0], c[1]); } }, P2 + .3)
+      .fromTo('.s5-in', { scale: .84 }, { scale: 1, duration: .5, ease: 'power2.out', immediateRender: false }, P2 + .3)
+      .fromTo('.s5-in > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .18, stagger: .035, ease: 'power2.out' }, P2 + .6)
+      .set('#s4', { autoAlpha: 0 }, P2 + .64)
+      .to({}, { duration: TOTAL - (P2 + .78) }, P2 + .78); // hold on the landing frame until the pin releases
+
+    st = ScrollTrigger.create({
+      animation: tl,
+      trigger: stage,
+      start: 'top top',
+      end: `+=${TOTAL * 100}%`,
+      pin: true,
+      scrub: 1,
+      anticipatePin: isMob ? 1 : 0, // only touch scrolling runs on another thread; with Lenis it would add a jump
+      invalidateOnRefresh: true,
+    });
+
+    const s4El = $('#s4'), rigEl = $('#rig'), lCopy = $('#lCopy'), routes = $('#routes');
+    let routesOn = true;
+    tl.eventCallback('onUpdate', () => {
+      const t = tl.time();
+      if (t > 7.32 && !played) { played = true; Tracker.play(); }
+      s4El.classList.toggle('live', t > 7.2 && t < P2 + .02); // interactive only while the tracker is on screen
+      lCopy.classList.toggle('live', t < .3);
+      // Dedicated GPU layer only during each zoom: leaving the band resets the resolution of that layer
+      rigEl.classList.toggle('zoom', t > 3.9 && t < 4.66);
+      s4in.classList.toggle('zoom', t >= P2 && t < P2 + .66);
+      const showRoutes = t > 6.4 && t < 7.1;
+      if (showRoutes !== routesOn) {
+        routesOn = showRoutes;
+        routes.classList.toggle('on', showRoutes);
+        if (showRoutes) routes.unpauseAnimations?.(); else routes.pauseAnimations?.();
+      }
+      updateHud(t);
+      videoFrame(t);
+    });
+    routes.pauseAnimations?.(); routesOn = false;
+    updateHud(0);
+    lCopy.classList.add('live');
+
+    return () => { gsap.set(s4in, { clearProps: 'all' }); Tracker.onRender(null); measureA2 = null; tl = null; st = null; };
+  }
+
+  /* ---------- Per-frame drawing, only for the layers on screen ---------- */
+  let flowClear = false;
+  function render(time, deltaMs) {
+    const dt = Math.min(.05, deltaMs / 1000);
+    const t = tl ? tl.time() : 0;
+    if (!bgPaused && (t < 4.66 || t > 7)) RicserBG.draw(S, time);
+    if (t < 4.66) { Flow.draw(S, dt, time); flowClear = false; }
+    else if (!flowClear) { Flow.draw({ flow: 0, word: 0 }, dt, time); flowClear = true; }
+    if (t > 4.2 && t < 7.5) Halftone.draw(S, dt, time);
+  }
+
+  function updateHud(t) {
+    let i = 0;
+    NAMES.forEach((n, k) => { if (t >= n[0]) i = k; });
+    $('#hudBar').style.transform = `scaleX(${Math.min(1, t / TOTAL)})`;
+    if (i === hudIdx) return;
+    hudIdx = i;
+    $('#hudN').textContent = NAMES[i][1];
+    $('#hudName').textContent = NAMES[i][2];
+    $$('#scenes a').forEach(a => {
+      const on = a.dataset.go === NAMES[i][3];
+      a.classList.toggle('on', on);
+      if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    });
+  }
+
+  /* ---------- Navigation ---------- */
+  const portalOffset = () => $('#top').offsetHeight;
+  function go(name) {
+    if (name === 'portal') { lenis.scrollTo('#portal', { duration: 2.6, offset: -portalOffset(), force: true, easing: e => 1 - (1 - e) ** 4 }); return; }
+    if (!st) return;
+    const y = st.start + (st.end - st.start) * LABELS[name] / TOTAL;
+    lenis.scrollTo(y, { duration: 2.2, force: true, easing: e => 1 - (1 - e) ** 4 });
+  }
+  window.Cinema = { go };
+
+  function wireNav() {
+    document.addEventListener('click', e => {
+      const a = e.target.closest('[data-go]');
+      if (!a) return;
+      e.preventDefault();
+      go(a.dataset.go);
+    });
+    $('#quickTrk').addEventListener('submit', e => {
+      e.preventDefault();
+      played = false;
+      Tracker.search($('#quickIn').value);
+      go('s4');
+    });
+  }
+
+  /* ---------- Pointer: registration-mark cursor, machine parallax, HUD coordinates ---------- */
+  function pointer() {
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (!fine) return;
+    const cur = $('#cursor');
+    const qx = gsap.quickTo(cur, 'x', { duration: .28, ease: 'power3' }), qy = gsap.quickTo(cur, 'y', { duration: .28, ease: 'power3' });
+    const ry = gsap.quickTo('#rigOuter', 'rotationY', { duration: .9, ease: 'power2' }), rx = gsap.quickTo('#rigOuter', 'rotationX', { duration: .9, ease: 'power2' });
+    const xy = $('#hudXY');
+    cur.classList.add('on');
+    window.addEventListener('pointermove', e => {
+      qx(e.clientX); qy(e.clientY);
+      const nx = e.clientX / innerWidth - .5, ny = e.clientY / innerHeight - .5;
+      S.mx = nx * 2; S.my = -ny * 2;
+      ry(nx * 5); rx(-ny * 3);
+      xy.textContent = `${String(Math.round(e.clientX)).padStart(4, '0')} · ${String(Math.round(e.clientY)).padStart(4, '0')}`;
+      cur.classList.toggle('hot', !!e.target.closest?.('a,button,input,select,textarea,label,[role=button]'));
+    }, { passive: true });
+  }
+
+  function videoPlates() {
+    VIDEO_PLATES.forEach(p => {
+      const v = document.createElement('video');
+      Object.assign(v, { src: p.src, muted: true, loop: true, autoplay: true, playsInline: true });
+      v.style.opacity = 0;
+      $('#lVideo').appendChild(v);
+      p.el = v;
+    });
+  }
+  function videoFrame(t) { VIDEO_PLATES.forEach(p => { p.el.style.opacity = t >= p.from && t <= p.to ? (p.opacity ?? .6) : 0; }); }
+
+  function onResize() {
+    RicserBG.resize(); Flow.resize(); Halftone.resize();
+    ScrollTrigger.refresh();
+  }
+
+  /* ---------- Fallback: reduced motion, or the animation CDN could not load ---------- */
+  function staticMode() {
+    html.classList.add('static');
+    RicserBG.init($('#bg'));
+    S.ring = .7; S.beam = 1; S.morph = 1; S.htZoom = 1;
+    RicserBG.draw(S, 3);
+    if (!Halftone.init($('#halftone'))) html.classList.add('no-webgl');
+    else Halftone.draw(S, 0, 3);
+    Tracker.search('GAR-2026-0042');
+    const map = { s1: '#stage', s2: '#lS2', s3: '#s3', s4: '#s4', portal: '#portal' };
+    window.Cinema = { go: n => $(map[n]).scrollIntoView() };
+    document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); window.Cinema.go(a.dataset.go); } });
+    $('#quickTrk').addEventListener('submit', e => { e.preventDefault(); Tracker.search($('#quickIn').value); window.Cinema.go('s4'); });
+  }
+
+  /* ---------- HUD decoration (simulated values, demo only) ---------- */
+  function hudNodes() {
+    const nodes = [['EZE-01', 12], ['ROS-02', 18], ['CBA-03', 24], ['FAB-HC', 142]];
+    const ul = $('#hudNodes');
+    ul.innerHTML = nodes.map(n => `<li><i></i>${n[0]} <span>${n[1]} ms</span></li>`).join('');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setInterval(() => {
+      const k = Math.floor(Math.random() * nodes.length), n = nodes[k];
+      const v = Math.max(4, n[1] + Math.round((Math.random() - .5) * n[1] * .3));
+      ul.children[k].querySelector('span').textContent = `${v} ms`;
+    }, 1400);
+  }
+
+  function debounce(fn, ms) { let id; return () => { clearTimeout(id); id = setTimeout(fn, ms); }; }
+})();
