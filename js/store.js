@@ -84,7 +84,7 @@ window.Ricser = (() => {
     eqp('dtg-2-estaciones', 'DTG', '2 estaciones', 320, 190, vistas('dtg-2-estaciones', [[1534, 909]])),
     eqp('dtg', 'DTG', 'Modelo a confirmar', 320, 158, vistas('dtg', [[1600, 792]])), // TODO: confirmar con Ricser qué modelo es esta foto
     eqp('hibrida-uv', 'Híbrida UV', 'Hybrid', 320, 116, vistas('hibrida-uv', [[1600, 581]])),
-    eqp('plotter-uv', 'Plotter UV', 'Rollo', 320, 134, vistas('plotter-uv', [[1600, 669], [1600, 558], [979, 449]])),
+    eqp('plotter-uv', 'Plotter UV', 'Modelo a confirmar', 320, 134, vistas('plotter-uv', [[1600, 669], [1600, 558], [979, 449]])), // TODO: confirmar con Ricser qué modelo es
     eqp('plotter-uv-32', 'Plotter UV', '3,2 m', 320, 111, vistas('plotter-uv-32', [[1600, 557]])),
     eqp('plotter-1-cabezal', 'Plotter', '1 cabezal', 320, 236, vistas('plotter-1-cabezal', [[1600, 1182]])),
     eqp('plotter-2-cabezales', 'Plotter', '2 cabezales', 320, 294, vistas('plotter-2-cabezales', [[1489, 1367]])),
