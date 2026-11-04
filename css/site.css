@@ -8,7 +8,7 @@
   --line:rgba(41,130,163,.55);--line2:rgba(41,130,163,.26);
   --disp:"Archivo",system-ui,sans-serif;--ui:"Space Grotesk",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
   --ease:cubic-bezier(.2,0,0,1);
-  --hdr:64px;--pad:clamp(16px,3vw,44px);
+  --hdr:70px;--trkH:0px;--pad:clamp(16px,3vw,44px);
   --rw:min(56vw,98svh);--rigY:6svh;
 }
 *{box-sizing:border-box}
@@ -72,7 +72,7 @@ main,#top{position:relative;z-index:1}
 /* ---------- Header ---------- */
 #top{position:fixed;left:0;right:0;top:0;height:var(--hdr);z-index:40;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 var(--pad);background:linear-gradient(rgba(0,15,22,.82),rgba(0,15,22,0))}
 .brand{display:block;flex:none}
-.brand img{height:30px;width:auto}
+.brand img{height:48px;width:auto;filter:brightness(1.12) contrast(1.08) drop-shadow(0 1px 10px rgba(0,15,22,.75))}
 #scenes{display:flex;gap:2px}
 #scenes a{display:flex;gap:7px;align-items:center;padding:8px 10px;color:var(--ink3);text-decoration:none;font:500 11.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;transition:color .2s var(--ease)}
 #scenes a i{font-style:normal;color:inherit}
@@ -83,6 +83,24 @@ main,#top{position:relative;z-index:1}
 .skip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:3px;color:var(--ink);text-decoration:none;font:500 12.5px var(--mono);background:rgba(0,15,22,.55);transition:background-color .2s var(--ease),color .2s var(--ease)}
 .skip svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6}
 .skip:hover{background:var(--cyan);color:var(--abyss)}
+
+/* Quick tracker: hangs below "Entrar al portal" and is the loudest thing in the header */
+.hd-r{position:relative;flex:none;display:flex;justify-content:flex-end}
+.quick{position:absolute;right:0;top:calc(100% + 8px);width:clamp(310px,27vw,390px);transition:opacity .25s var(--ease),visibility .25s,transform .25s var(--ease)}
+#top.trk-off .quick{opacity:0;visibility:hidden;transform:translateY(-8px)}
+.quick label{display:block;margin-bottom:6px;font:800 13px/1.2 var(--disp);font-stretch:112%;letter-spacing:.09em;text-transform:uppercase;color:#e4fffd;text-shadow:0 1px 8px rgba(0,15,22,.9)}
+.quick-r{position:relative;display:flex;background:rgba(0,15,22,.9);border:1px solid var(--cyan);border-radius:4px;box-shadow:0 0 0 1px rgba(80,186,183,.2),0 0 22px rgba(80,186,183,.34),0 10px 28px rgba(0,15,22,.5);transition:box-shadow .2s var(--ease)}
+.quick-r::after{content:"";position:absolute;inset:-1px;border:1px solid var(--cyan);border-radius:4px;pointer-events:none;animation:trkPulse 2.8s var(--ease) infinite}
+.quick-r:focus-within{box-shadow:0 0 0 1px var(--cyan),0 0 30px rgba(80,186,183,.55),0 10px 28px rgba(0,15,22,.5)}
+.quick-r:focus-within::after{animation:none;opacity:0}
+@keyframes trkPulse{0%{opacity:.8;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.05,1.22)}}
+.quick input{flex:1;min-width:0;height:50px;background:none;border:0;padding:0 14px;font:500 15px var(--mono);letter-spacing:.02em;outline:0}
+.quick input::placeholder{color:var(--ink3);opacity:1}
+.quick button{flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 16px;background:var(--cyan);border:0;border-radius:0 3px 3px 0;color:var(--abyss);font:800 13px var(--disp);font-stretch:108%;letter-spacing:.04em;text-transform:uppercase;transition:background-color .15s var(--ease)}
+.quick button:hover{background:#7fdcd8}
+.quick button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+.quick p{margin-top:6px;padding:5px 9px;background:rgba(0,15,22,.92);border-radius:3px;font-size:12.5px;line-height:1.3;color:#ff9db2}
+.quick p:empty{display:none}
 
 /* ---------- Stage ---------- */
 #stage{position:relative;height:100svh;overflow:hidden;z-index:1}
@@ -125,14 +143,6 @@ main,#top{position:relative;z-index:1}
 /* Scene 1 copy */
 .s1-copy{position:absolute;left:var(--pad);bottom:clamp(20px,4svh,44px);width:min(340px,86vw);display:grid;gap:12px}
 .lede{font-size:clamp(15px,1.25vw,17.5px);line-height:1.42;color:var(--ink2)}
-.quick label{display:block;font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
-.quick-r{display:flex;background:rgba(0,15,22,.82);border:1px solid var(--line);border-radius:3px;transition:border-color .2s var(--ease)}
-.quick-r:focus-within{border-color:var(--cyan)}
-.quick input{flex:1;min-width:0;height:44px;background:none;border:0;padding:0 12px;font:500 14px var(--mono);outline:0}
-.quick button{width:46px;background:var(--cyan);border:0;border-radius:0 2px 2px 0;color:var(--abyss);display:grid;place-items:center;transition:background-color .15s var(--ease)}
-.quick button:hover{background:#7fdcd8}
-.quick button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
-#lCopy.live .quick{pointer-events:auto}
 
 /* Scene 2 */
 .s2-head{position:absolute;left:var(--pad);top:calc(var(--hdr) + 12px);width:min(450px,36vw)}
@@ -251,14 +261,8 @@ html.no-webgl #s3{background:var(--abyss) url(../assets/marca/ricser-logo-blanco
 #hud{position:absolute;inset:0;pointer-events:none;font:400 11px/1.55 var(--mono);color:var(--ink3)}
 .crop{position:absolute;width:12px;height:12px;border:solid var(--steel)}
 .crop.tl{left:10px;top:10px;border-width:1px 0 0 1px}.crop.tr{right:10px;top:10px;border-width:1px 1px 0 0}.crop.bl{left:10px;bottom:10px;border-width:0 0 1px 1px}.crop.br{right:10px;bottom:10px;border-width:0 1px 1px 0}
-.hud-a{position:absolute;left:var(--pad);top:calc(var(--hdr) + 8px)}
-.hud-b{position:absolute;right:var(--pad);top:calc(var(--hdr) + 8px);text-align:right}
+.hud-b{position:absolute;right:var(--pad);bottom:calc(clamp(16px,3svh,30px) + 26px);text-align:right}
 .hud-h{color:var(--ink2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
-.hud-h .live{font-weight:500;color:var(--cyan);margin-left:6px}
-#hudNodes li{display:flex;gap:8px;align-items:center}
-#hudNodes i{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:blink 2.4s ease-in-out infinite}
-#hudNodes li:nth-child(2) i{animation-delay:.4s}#hudNodes li:nth-child(3) i{animation-delay:.9s}#hudNodes li:nth-child(4) i{animation-delay:1.3s}
-#hudNodes span{color:var(--ink2);margin-left:auto;padding-left:14px}
 @keyframes blink{50%{opacity:.25}}
 .hud-xy{color:var(--ink2)}
 .hud-c{position:absolute;right:var(--pad);bottom:clamp(16px,3svh,30px);width:min(280px,30vw);text-align:right}
@@ -454,20 +458,25 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
   #scenes a.on span{display:none}
 }
 @media (max-width:860px){
-  :root{--hdr:56px;--rw:94vw;--rigY:-5svh}
+  :root{--hdr:60px;--trkH:58px;--rw:94vw;--rigY:-5svh}
   #scenes{display:none}
-  .brand img{height:26px}
+  .brand img{height:38px}
   .bt-logo{width:82vw}
   .skip{min-height:38px;padding:0 10px;font-size:12px}
-  .mega{top:calc(var(--hdr) + 42px);transform:none;font-size:13vw}
+  /* Fixed compact bar right under the logo row, never over it */
+  .quick{position:fixed;left:12px;right:12px;top:calc(var(--hdr) + 2px);width:auto;display:flex;align-items:center}
+  .quick-r{flex:1;min-width:0}
+  .quick label{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .quick input{height:48px;font-size:16px;padding:0 12px}
+  .quick button{padding:0 13px;font-size:12.5px}
+  .quick p{position:absolute;left:0;right:0;top:calc(100% + 4px);margin:0}
+  .mega{top:calc(var(--hdr) + var(--trkH) + 12px);transform:none;font-size:13vw}
   #lOutline{display:none}
   #lMachine{align-items:center}
   .s1-copy{left:16px;right:16px;width:auto;bottom:18px;gap:8px}
   .lede{font-size:14.5px}
-  .hud-a{top:calc(var(--hdr) + 2px)}
-  .hud-a #hudNodes{display:none}
   .hud-c{display:none}
-  .s2-head{width:auto;right:16px;left:16px}
+  .s2-head{width:auto;right:16px;left:16px;top:calc(var(--hdr) + var(--trkH) + 8px)}
   .s2-head h2{font-size:21px}
   #coLayer{left:16px;right:16px;top:auto;bottom:22px;width:auto;aspect-ratio:auto;height:124px;transform:none}
   .co,.co-l,.co-r{left:0;right:0;top:auto;bottom:0;width:auto}
@@ -477,7 +486,7 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
   .ld{display:none}
   .pts text{display:block}
   .s2-note{display:none}
-  .s3-copy{left:16px;right:16px;top:calc(var(--hdr) + 8px);width:auto;transform:none}
+  .s3-copy{left:16px;right:16px;top:calc(var(--hdr) + var(--trkH) + 8px);width:auto;transform:none}
   .cap{top:0;margin:0;padding:0}
   .cap h2{font-size:24px}
   .cap p:last-child{font-size:14px;margin-top:6px}
@@ -532,14 +541,18 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
 html.static #boot,html.static #iris,html.static .flow,html.static #hud,html.static #lOutline,html.static #v34,html.static #beam,html.static #cursor{display:none}
 html.static #stage{height:auto;overflow:visible}
 html.static .layer{position:relative;inset:auto}
-html.static #lTitle{padding:calc(var(--hdr) + 28px) 0 12px}
+/* Without the pin the page scrolls normally, so the header stays at the top instead of covering the content */
+html.static #top{position:absolute}
+html.static .cc-bar{top:0}
+html.static .quick{position:absolute}
+html.static .quick-r::after{animation:none;opacity:0}
+html.static #lTitle{padding:calc(var(--hdr) + 112px) 0 12px}
 html.static .mega{position:static;transform:none}
 html.static #lMachine{padding:0 var(--pad);display:grid}
 html.static #fPhoto{clip-path:none}
 html.static #fXray,html.static #schema{display:none}
 html.static #lCopy,html.static #lS2{padding:24px var(--pad)}
 html.static .s1-copy,html.static .s2-head,html.static .s2-note{position:static;width:auto;max-width:560px}
-html.static .quick{pointer-events:auto}
 html.static #coLayer{position:static;transform:none;width:auto;aspect-ratio:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:20px}
 html.static .co{position:static;width:auto}
 html.static #s3{height:100svh}
@@ -549,5 +562,5 @@ html.static .cap{position:static;margin:0 0 22px}
 html.static #s4{padding:32px 0}
 html.static #s4in{position:relative;inset:auto;margin:0 var(--pad);pointer-events:auto;min-height:620px}
 html.static #s5{min-height:40svh;padding:32px 0}
-html.static .fleet-track,html.static .reg,html.static .rt-hub2,html.static .r-flow,html.static #hudNodes i,html.static .pill .dot{animation:none}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html.static .fleet-track,html.static .reg,html.static .rt-hub2,html.static .r-flow,html.static .pill .dot{animation:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.quick-r::after{animation:none;opacity:0}}

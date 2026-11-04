@@ -65,7 +65,17 @@
     <a href="#stage" data-go="s4"><i>04</i><span>Telemetría</span></a>
     <a href="#portal" data-go="portal"><i>05</i><span>Command Center</span></a>
   </nav>
-  <a class="skip" href="#portal" data-go="portal">Entrar al portal <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3 8.5 8 13.500l5-5"/></svg></a>
+  <div class="hd-r">
+    <a class="skip" href="#portal" data-go="portal">Entrar al portal <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3 8.5 8 13.500l5-5"/></svg></a>
+    <form id="quickTrk" class="quick" role="search" aria-label="Rastreo rápido" novalidate>
+      <label for="quickIn">Rastreo rápido</label>
+      <div class="quick-r">
+        <input id="quickIn" placeholder="GAR-2026-0042" autocomplete="off" spellcheck="false" aria-describedby="quickMsg">
+        <button type="submit">Rastrear <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M8.500 3l5 5-5 5"/></svg></button>
+      </div>
+      <p id="quickMsg" role="status"></p>
+    </form>
+  </div>
 </header>
 
 <main>
@@ -149,13 +159,6 @@
     <div class="s1-copy">
       <p class="eyebrow">Ricser SRL · Importador directo y exclusivo HanColor</p>
       <p class="lede">Repuestos, garantías y servicio técnico de tu maquinaria, seguidos en tiempo real.</p>
-      <form id="quickTrk" class="quick" role="search" aria-label="Rastreo rápido">
-        <label for="quickIn">Rastreo rápido</label>
-        <div class="quick-r">
-          <input id="quickIn" value="GAR-2026-0042" autocomplete="off" spellcheck="false">
-          <button type="submit" aria-label="Rastrear caso"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M8.500 3l5 5-5 5"/></svg></button>
-        </div>
-      </form>
     </div>
   </div>
 
@@ -236,10 +239,6 @@
   <!-- HUD -->
   <div id="hud" aria-hidden="true">
     <i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>
-    <div class="hud-a">
-      <p class="hud-h">Telemetría Ricser <b class="live">En línea</b></p>
-      <ul id="hudNodes"></ul>
-    </div>
     <div class="hud-b">
       <p class="hud-h">Importación directa</p>
       <p>ORIGEN&nbsp; FÁBRICA HANCOLOR</p>

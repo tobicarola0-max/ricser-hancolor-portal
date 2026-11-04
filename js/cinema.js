@@ -20,7 +20,16 @@
 
   Tracker.init();
   Portal.init();
-  hudNodes();
+  $('#quickIn').addEventListener('input', () => { $('#quickMsg').textContent = ''; });
+
+  // Shared by the animated site and the static fallback: a code that exists goes to the tracker, anything else stays here
+  function quickSearch(send) {
+    const q = $('#quickIn').value.trim(), msg = $('#quickMsg');
+    if (!q) { msg.textContent = 'Ingresá un código, por ejemplo GAR-2026-0042.'; $('#quickIn').focus(); return; }
+    if (!Tracker.search(q, { deferPlay: true })) { msg.textContent = `No encontramos "${q}". Probá con GAR-2026-0042.`; $('#quickIn').focus(); return; }
+    msg.textContent = '';
+    send();
+  }
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // ?static previews the fallback that reduced-motion users get
@@ -94,7 +103,7 @@
     ScrollTrigger.addEventListener('refresh', () => { lenis.resize(); measureA2?.(); if (tl) { hudIdx = -1; updateHud(tl.time()); } });
     if (deepLink) {
       S.ring = 0; S.beam = 1;
-      gsap.set('.brand, #scenes, .skip, #hud', { clearProps: 'opacity,visibility' });
+      gsap.set('.brand, #scenes, .hd-r, #hud', { clearProps: 'opacity,visibility' });
       lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() });
       ScrollTrigger.update();
       RicserBG.draw(S, 3);
@@ -112,7 +121,7 @@
     const from = logo.getBoundingClientRect(), to = $('.brand img').getBoundingClientRect();
     const H = innerHeight, D = 1.6, restY = S.ringY, ease = 'expo.inOut';
 
-    gsap.set('.brand, #scenes, .skip', { autoAlpha: 0 });
+    gsap.set('.brand, #scenes, .hd-r', { autoAlpha: 0 });
     S.ringY = restY - 1.25; S.drop = 1.25; S.flow = .75;
 
     const i = introTl = gsap.timeline({
@@ -141,7 +150,7 @@
       .from('.m2 .mi', { yPercent: 112, duration: 1.15, ease: 'expo.out' }, D * .6 + .09)
       .from('.s1-copy > *', { y: 18, autoAlpha: 0, duration: .55, stagger: .07, ease: 'power3.out', clearProps: 'transform,opacity,visibility' }, D * .85)
       .from('#hud', { autoAlpha: 0, duration: .6, clearProps: 'opacity,visibility' }, D * .9)
-      .to('#scenes, .skip', { autoAlpha: 1, duration: .5, clearProps: 'opacity,visibility' }, D * .85)
+      .to('#scenes, .hd-r', { autoAlpha: 1, duration: .5, clearProps: 'opacity,visibility' }, D * .85)
       // The flying logo lands exactly over the header logo and hands over to it
       .set('.brand', { autoAlpha: 1 }, D + .06)
       .set(logo, { autoAlpha: 0 }, D + .07)
@@ -206,7 +215,7 @@
       .fromTo(S, { word: 1 }, { word: 2, duration: .45, ease: 'power2.in', immediateRender: false }, .9)
       .fromTo('#rig', { scale: heroScale, x: heroX, y: 0 }, { scale: heroScale * 1.1, x: heroX, y: 0, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
       .fromTo('#v34', { rotationY: 7 }, { rotationY: -5, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
-      .fromTo('.hud-a, .hud-b', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 1.2);
+      .fromTo('.hud-b', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 1.2);
 
     // Rotation: the 3/4 photo turns toward the viewer and hands over to the front photo of the same model
     tl.fromTo('#v34', { rotationY: -5 }, { rotationY: -36, duration: .5, ease: 'power2.in', immediateRender: false }, 1.1)
@@ -323,14 +332,15 @@
       invalidateOnRefresh: true,
     });
 
-    const s4El = $('#s4'), rigEl = $('#rig'), lCopy = $('#lCopy'), routes = $('#routes');
+    const s4El = $('#s4'), rigEl = $('#rig'), topEl = $('#top'), routes = $('#routes');
     let routesOn = true;
     tl.eventCallback('onUpdate', () => {
       const t = tl.time();
       if (t < 7.05 || t > 8.45) played = false;
       else if (t >= 7.35 && t <= 8.35 && !played) { played = true; Tracker.play(); }
       s4El.classList.toggle('live', t > 7.2 && t < P2 + .02); // interactive only while the tracker is on screen
-      lCopy.classList.toggle('live', t < .3);
+      // Scene 4 has its own search field and the portal its own bar: the quick tracker steps aside for both
+      topEl.classList.toggle('trk-off', t > 7.05);
       // Dedicated GPU layer only during each zoom: leaving the band resets the resolution of that layer
       rigEl.classList.toggle('zoom', t > 3.9 && t < 4.66);
       s4in.classList.toggle('zoom', t >= P2 && t < P2 + .66);
@@ -345,7 +355,6 @@
     });
     routes.pauseAnimations?.(); routesOn = false;
     updateHud(0);
-    lCopy.classList.add('live');
 
     return () => { gsap.set(s4in, { clearProps: 'all' }); Tracker.onRender(null); measureA2 = null; tl = null; st = null; };
   }
@@ -396,8 +405,7 @@
     $('#quickTrk').addEventListener('submit', e => {
       e.preventDefault();
       played = false;
-      Tracker.search($('#quickIn').value, { deferPlay: true });
-      go('s4');
+      quickSearch(() => go('s4'));
     });
   }
 
@@ -448,20 +456,7 @@
     const map = { s1: '#stage', s2: '#lS2', s3: '#s3', s4: '#s4', portal: '#portal' };
     window.Cinema = { go: n => $(map[n]).scrollIntoView() };
     document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); window.Cinema.go(a.dataset.go); } });
-    $('#quickTrk').addEventListener('submit', e => { e.preventDefault(); Tracker.search($('#quickIn').value); window.Cinema.go('s4'); });
-  }
-
-  /* ---------- HUD decoration (simulated values, demo only) ---------- */
-  function hudNodes() {
-    const nodes = [['EZE-01', 12], ['ROS-02', 18], ['CBA-03', 24], ['FAB-HC', 142]];
-    const ul = $('#hudNodes');
-    ul.innerHTML = nodes.map(n => `<li><i></i>${n[0]} <span>${n[1]} ms</span></li>`).join('');
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    setInterval(() => {
-      const k = Math.floor(Math.random() * nodes.length), n = nodes[k];
-      const v = Math.max(4, n[1] + Math.round((Math.random() - .5) * n[1] * .3));
-      ul.children[k].querySelector('span').textContent = `${v} ms`;
-    }, 1400);
+    $('#quickTrk').addEventListener('submit', e => { e.preventDefault(); quickSearch(() => window.Cinema.go('s4')); });
   }
 
   function debounce(fn, ms) { let id; return () => { clearTimeout(id); id = setTimeout(fn, ms); }; }
