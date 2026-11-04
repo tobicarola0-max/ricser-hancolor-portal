@@ -193,7 +193,7 @@ window.Ricser = (() => {
     if (changed && key === 's' && v.hist) v.hist[v.s] = v.hist[v.s] || todayISO();
     emit(src);
     // Every step of a spare part tells the client, whichever view it was changed from
-    if (changed && v.t === 'repuesto' && ['s', 'guia', 'eta'].includes(key)) Notifier.enviar(v, key);
+    if (changed && v.t === 'repuesto' && ['s', 'guia', 'eta'].includes(key)) Notifier.avisarAvance(v, key);
     return v;
   }
 
@@ -249,42 +249,9 @@ window.Ricser = (() => {
     return { ok: true };
   }
 
-  /* ---------- Client e-mails ----------
-     A queue of everything sent, shown in the internal panel. The real sending lives in api/notify.js, which only
-     exists on Vercel: on any other host (or without an API key) the flow runs in demo mode and nothing leaves. */
+  // Client e-mails: the queue lives here and js/notifier.js fills it
   const CLIENTE = { nombre: 'Gráfica Del Plata', email: 'compras@graficadelplata.example' };
-  const Notifier = (() => {
-    const cola = [], subs = [];
-    const endpoint = /\.vercel\.app$/.test(location.hostname) ? '/api/notify' : null;
-    let nextId = 1, real = false; // real only once the server confirms it sent one: without keys it stays in demo mode
-    const tell = m => subs.forEach(fn => fn(m));
-
-    async function entregar(m, data) {
-      try {
-        const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        const j = await r.json();
-        m.estado = r.ok ? (j.sent ? 'enviado' : 'demo') : 'error';
-        if (j.sent) real = true;
-      } catch { m.estado = 'error'; }
-      tell(m);
-    }
-
-    function enviar(e, motivo) {
-      const q = EQ.find(x => x.id === e.eq), steps = TYPES[e.t].steps;
-      const data = {
-        caso: e.caso, cliente: CLIENTE.nombre, equipo: q.m, pieza: e.ti, estado: steps[e.s], etapa: e.s + 1, etapas: steps.length,
-        awb: e.guia || '', transportista: e.carrier || '', eta: e.eta ? fmt(e.eta) : '', motivo,
-        seguimiento: `${location.origin}${location.pathname}?caso=${encodeURIComponent(e.caso)}`,
-      };
-      const mail = MailTemplate.build(data);
-      const m = { id: nextId++, caso: e.caso, to: CLIENTE.email, toName: CLIENTE.nombre, subject: mail.subject, html: mail.html, at: new Date().toISOString(), estado: endpoint ? 'pendiente' : 'demo' };
-      cola.unshift(m);
-      tell(m);
-      if (endpoint) entregar(m, data);
-      return m;
-    }
-    return { cola, enviar, endpoint, on: fn => subs.push(fn), get real() { return real; } };
-  })();
+  const outbox = [];
 
   // Tracker lookup: accepts case, order or air waybill, with any casing or spacing
   const norm = s => String(s || '').toUpperCase().replace(/^AWB/, '').replace(/[^A-Z0-9]/g, '');
@@ -296,5 +263,5 @@ window.Ricser = (() => {
   const shipmentsOf = id => EV.filter(e => e.eq === id && TYPES[e.t].v).sort((a, b) => Number(done(a)) - Number(done(b)) || b.d.localeCompare(a.d));
   const codeOf = e => e.caso || e.pedido || '';
 
-  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, ROLES, LIMITS, CLIENTE, Notifier, Uploads, checkFile, addEvidence, removeEvidence, addMessage, sendToFactory, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
+  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, ROLES, LIMITS, CLIENTE, outbox, Uploads, checkFile, addEvidence, removeEvidence, addMessage, sendToFactory, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
 })();

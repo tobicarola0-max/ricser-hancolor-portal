@@ -2,7 +2,7 @@
    All data lives in Ricser (js/store.js), so every change here reaches the client portal, the internal panel and
    the tracker. The factory never sees the client's name, prices or internal notes. */
 window.Fabrica = (() => {
-  const { TYPES, EQ, EV, ROLES, LIMITS, fmt, esc, warranty, updateEvent, addEvidence, removeEvidence, addMessage, sendToFactory, Notifier } = Ricser;
+  const { TYPES, EQ, EV, ROLES, LIMITS, fmt, esc, warranty, updateEvent, addEvidence, removeEvidence, addMessage, sendToFactory } = Ricser;
   const STEPS = TYPES.repuesto.steps;
   const motion = () => !!window.gsap && !document.documentElement.classList.contains('static');
   const CHEVRON = '<svg class="fc-ch" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>';
@@ -129,7 +129,7 @@ window.Fabrica = (() => {
       b.setAttribute('aria-disabled', String(!sent(e) && i > 0));
       b.querySelector('small').textContent = e.hist && e.hist[i] && i <= e.s ? fmt(e.hist[i]) : '';
     });
-    const m = Notifier.cola.find(x => x.caso === e.caso);
+    const m = Notifier.outbox.find(x => x.caso === e.caso);
     card.querySelector('[data-mail]').innerHTML = `${m ? `<span>Último aviso al cliente: <b>${esc(m.subject)}</b> · ${hora(m.at)}</span>` : '<span>Todavía no se avisó al cliente sobre este caso.</span>'}<button type="button" class="link" data-inbox>Ver bandeja de mails</button>`;
   }
 

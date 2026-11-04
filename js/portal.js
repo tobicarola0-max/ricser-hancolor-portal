@@ -1,7 +1,7 @@
 /* Scene 5: Portal del cliente. Four functional views ported from "Portal de servicio técnico.html":
    client portal, internal panel, manufacturer portal and the data model. */
 window.Portal = (() => {
-  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, Notifier, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
+  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
   let cur = 'e1', dtype = '', toastTimer = 0;
@@ -175,7 +175,7 @@ window.Portal = (() => {
   const MAIL_STATE = { demo: 'Demo, no salió', pendiente: 'Enviando', enviado: 'Enviado', error: 'Falló' };
 
   function renderInbox() {
-    const list = Notifier.cola, cur = list.find(m => m.id === mailSel) || list[0];
+    const list = Notifier.outbox, cur = list.find(m => m.id === mailSel) || list[0];
     $('#mbMode').textContent = Notifier.real ? 'Envío real' : 'Modo demo';
     $('#mbList').innerHTML = list.length ? list.map(m => `<li><button type="button" class="mb-i" data-mail="${m.id}" aria-pressed="${m === cur}">
         <b>${esc(m.subject)}</b>
@@ -309,11 +309,11 @@ window.Portal = (() => {
 
     $('#tick').addEventListener('change', e => {
       const t = e.target; if (!t.dataset.id) return;
-      const mails = Notifier.cola.length;
+      const mails = Notifier.outbox.length;
       const v = updateEvent(+t.dataset.id, t.dataset.k, t.value, 'int');
       const row = t.closest('tr');
       if (v && row) row.querySelector('.mg').textContent = margin(v);
-      if (Notifier.cola.length === mails) toast('Guardado. El cliente ya ve el cambio.'); // otherwise the mail toast already said it
+      if (Notifier.outbox.length === mails) toast('Guardado. El cliente ya ve el cambio.'); // otherwise the mail toast already said it
     });
     Fabrica.init({ toast, openInbox });
     $('#mbList').addEventListener('click', e => { const b = e.target.closest('[data-mail]'); if (b) { mailSel = Number(b.dataset.mail); renderInbox(); } });
