@@ -179,7 +179,7 @@ html.booting main{visibility:hidden}
 .car-arrow svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
 .car-arrow:hover:not(:disabled){background:var(--cyan);color:var(--abyss)}
 .car-arrow:disabled{opacity:.32;cursor:default}
-.car-track{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:2px}
+.car-track{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px}
 .car-track::-webkit-scrollbar{display:none}
 /* The wheel keeps moving the page over the carousel: only the horizontal axis stays contained */
 .lenis.lenis-smooth .car-track[data-lenis-prevent]{overscroll-behavior:contain auto}
