@@ -1,7 +1,7 @@
 /* Scene 5: Portal del cliente. Four functional views ported from "Portal de servicio técnico.html":
    client portal, internal panel, manufacturer portal and the data model. */
 window.Portal = (() => {
-  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
+  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, codeOf, addEvidence, removeEvidence, checkFile, LIMITS } = Ricser;
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
   let cur = 'e1', dtype = '', toastTimer = 0;
@@ -42,6 +42,64 @@ window.Portal = (() => {
     return `<div class="steps">${T.steps.map((s, k) => `<div class="${k < v.s || done(v) ? 'd' : k === v.s ? 'n' : ''}">${esc(s)}</div>`).join('')}</div>`;
   }
 
+  /* A warranty claim in the client's history expands into its own detail: stages, shipment and the client's own
+     videos and photos. The internal chat, the technical note and editing the stages stay in the factory view. */
+  const openCases = new Set(), caseEv = new Map();
+  const CHEVRON = '<svg class="fc-ch" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>';
+
+  function caseMedia(v) {
+    const list = v.fab.evidencia.filter(x => x.por === 'Cliente');
+    if (!list.length) return '<div class="ev-empty cd-empty">Todavía no cargaste videos ni fotos de este reclamo.</div>';
+    const cur = list.find(x => x.id === caseEv.get(v.id)) || list[list.length - 1];
+    const media = cur.tipo === 'video'
+      ? `<video src="${cur.url}" controls playsinline preload="metadata" aria-label="Tu registro: ${esc(cur.nombre)}"></video>`
+      : `<img src="${cur.url}" alt="Tu registro: ${esc(cur.nombre)}">`;
+    return `<div class="ev-view">${media}</div><ul class="ev-list">${list.map(x => `<li><button type="button" class="chip" data-cev="${x.id}" data-case="${v.id}" aria-pressed="${x.id === cur.id}">${x.tipo === 'video' ? 'Video' : 'Foto'} · ${esc(x.nombre)}</button><button type="button" class="ev-x" data-cevx="${x.id}" data-case="${v.id}" aria-label="Quitar ${esc(x.nombre)}">×</button></li>`).join('')}</ul>`;
+  }
+
+  function caseRow(v, T) {
+    const open = openCases.has(v.id);
+    const facts = [['Pieza', v.ti], ['Falla informada', v.falla || 'Sin detalle'], ['Guía aérea', v.guia || 'Pendiente de fábrica'], ['Transportista', v.carrier || 'A confirmar'], ['Llegada estimada', v.eta ? fmt(v.eta) : 'A confirmar']];
+    return `<li style="--c:${T.c}">
+      <button type="button" class="case-row" data-case-id="${v.id}" aria-expanded="${open}" aria-controls="cd-${v.id}">
+        <span class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(T.steps[v.s])}</span></span>
+        <span class="sm">${T.n} · ${fmt(v.d)} · <span class="case mono">${esc(v.caso)}</span>${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}${v.carrier ? ` · ${esc(v.carrier)}` : ''}${v.eta ? ` · Llega el ${fmt(v.eta)}` : ''}</span>
+        ${CHEVRON}
+      </button>
+      ${v.notas ? `<p class="sm">${esc(v.notas)}</p>` : ''}
+      ${tracker(v, T)}
+      <div class="case-detail" id="cd-${v.id}"${open ? '' : ' hidden'}>
+        <div class="cd-in">
+          <dl class="fc-sum">${facts.map(f => `<div><dt>${f[0]}</dt><dd>${esc(f[1])}</dd></div>`).join('')}</dl>
+          <ol class="pz-tl">${T.steps.map((n, i) => `<li class="${i < v.s ? 'd' : i === v.s ? 'n' : ''}"${i === v.s ? ' aria-current="step"' : ''}><span class="pz-b"><b>${esc(n)}</b><small>${v.hist && v.hist[i] && i <= v.s ? fmt(v.hist[i]) : ''}</small></span></li>`).join('')}</ol>
+          <section class="cd-ev" aria-label="Tus videos y fotos del reclamo ${esc(v.caso)}">
+            <h4>Tus videos y fotos</h4>
+            <div class="ev-box">${caseMedia(v)}</div>
+            <div class="ev-up"><label class="btn ghost ev-btn">Cargar video o foto<input class="sr" type="file" accept="video/*,image/*" data-cup="${v.id}"></label><small>Video hasta ${LIMITS.video} MB, foto hasta ${LIMITS.imagen} MB.</small></div>
+            <p class="f-err" role="alert" data-cerr="${v.id}"></p>
+          </section>
+        </div>
+      </div>
+      <button class="link" data-track="${esc(v.caso)}">Ver en seguimiento</button>
+    </li>`;
+  }
+
+  // Height animation, so nothing below the row jumps
+  function toggleCase(btn) {
+    const id = Number(btn.dataset.caseId), p = document.getElementById(`cd-${id}`), open = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', open);
+    if (open) openCases.add(id); else openCases.delete(id);
+    if (window.gsap) gsap.killTweensOf(p);
+    const end = () => { p.classList.remove('anim'); gsap.set(p, { clearProps: 'height' }); window.__lenis?.resize(); };
+    if (open) {
+      p.hidden = false;
+      if (motion()) { p.classList.add('anim'); gsap.fromTo(p, { height: 0 }, { height: 'auto', duration: .45, ease: 'power3.out', onComplete: end }); }
+    } else {
+      p.querySelectorAll('video').forEach(v => v.pause());
+      if (motion()) { p.classList.add('anim'); gsap.to(p, { height: 0, duration: .34, ease: 'power2.inOut', onComplete: () => { p.hidden = true; end(); } }); } else p.hidden = true;
+    }
+  }
+
   function renderDet() {
     const e = EQ.find(x => x.id === cur), w = warranty(e), st = eqStatus(e);
     const evs = EV.filter(v => v.eq === cur).sort((x, y) => y.d.localeCompare(x.d) || y.id - x.id);
@@ -73,6 +131,7 @@ window.Portal = (() => {
       <h3>Historial y seguimiento</h3>
       <ul class="tl">${evs.map(v => {
         const T = TYPES[v.t], code = codeOf(v);
+        if (v.t === 'repuesto') return caseRow(v, T);
         return `<li style="--c:${T.c}">
           <div class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(T.steps[v.s])}</span></div>
           <p class="sm">${T.n} · ${fmt(v.d)}${code ? ` · <span class="case mono">${esc(code)}</span>` : ''}${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}${v.carrier ? ` · ${esc(v.carrier)}` : ''}${v.eta ? ` · Llega el ${fmt(v.eta)}` : ''}</p>
@@ -96,7 +155,7 @@ window.Portal = (() => {
       o = REM.map((r, k) => `<label class="opt"><input type="radio" name="o" value="${k}" ${k ? '' : 'checked'}><span><b>${esc(r.k)}</b><small>${esc(r.d)}</small></span><b class="mono">USD ${r.p}</b></label>`).join('');
       x = '<label class="f">Día y horario preferido<select id="slot"><option>Mañana, 10:00</option><option>Mañana, 15:00</option><option>Pasado mañana, 11:00</option></select></label>';
     }
-    if (t === 'repuesto') x = '<label class="f">¿Qué pieza falló?<input id="part" placeholder="Ej.: cabezal de impresión" aria-describedby="partErr"></label><p class="f-err" id="partErr"></p><label class="f">Foto o video de la falla<input type="file" accept="image/*,video/*"></label>';
+    if (t === 'repuesto') x = '<label class="f">¿Qué pieza falló?<input id="part" placeholder="Ej.: cabezal de impresión" aria-describedby="partErr"></label><p class="f-err" id="partErr"></p><label class="f">Foto o video de la falla<input id="partFile" type="file" accept="image/*,video/*" aria-describedby="fileErr"></label><p class="f-err" id="fileErr"></p>';
     if (t === 'visita') x = '<label class="f">Urgencia<select id="urg"><option>Esta semana</option><option>Este mes</option><option>Equipo detenido (urgente)</option></select></label>';
     if (t === 'insumo') x = '<label class="f">Insumos y cantidades<input id="part" placeholder="Ej.: Tinta UV cian ×2"></label>';
     $('#opts').innerHTML = o;
@@ -118,10 +177,18 @@ window.Portal = (() => {
     ev.preventDefault();
     const r = document.querySelector('input[name=o]:checked'), p = $('#part'), T = TYPES[dtype];
     if (dtype === 'repuesto' && !p.value.trim()) { $('#partErr').textContent = 'Decinos qué pieza falló.'; p.focus(); return; }
+    const file = dtype === 'repuesto' && $('#partFile').files[0];
+    if (file) {
+      const err = checkFile(file);
+      $('#fileErr').textContent = err || '';
+      if (err) { $('#partFile').focus(); return; }
+    }
     const note = $('#note').value.trim();
     const ti = dtype === 'remoto' ? REM[r.value].k : (p && p.value.trim()) || T.n;
     const e = addEvent({ eq: cur, t: dtype, ti, price: dtype === 'remoto' ? REM[r.value].p : 0, note, falla: note });
     $('#dlg').close();
+    // The file goes with the claim, so the technician and the factory find it on the case
+    if (file) addEvidence(e.id, file, 'Cliente').then(() => emit('cli'));
     const code = codeOf(e);
     toast(code ? `Solicitud enviada. Tu número es ${code}.` : 'Solicitud enviada. Podés seguirla en el historial.');
   }
@@ -298,11 +365,34 @@ window.Portal = (() => {
   function init() {
     $('#eqs').addEventListener('click', e => { const b = e.target.closest('.eq'); if (b) { cur = b.dataset.id; renderEqs(); renderDet(); } });
     $('#det').addEventListener('click', e => {
+      const row = e.target.closest('.case-row');
+      if (row) { toggleCase(row); return; }
       const a = e.target.closest('.act');
       if (a) { openDlg(a.dataset.t); return; }
+      const pick = e.target.closest('[data-cev]');
+      if (pick) { caseEv.set(Number(pick.dataset.case), Number(pick.dataset.cev)); renderDet(); return; }
+      const del = e.target.closest('[data-cevx]');
+      if (del) { removeEvidence(Number(del.dataset.case), Number(del.dataset.cevx)); emit('cli'); return; }
       const t = e.target.closest('[data-track]');
       if (t) { Tracker.search(t.dataset.track, { deferPlay: true }); window.Cinema?.go('s4'); }
     });
+    $('#det').addEventListener('change', async e => {
+      const input = e.target.closest('[data-cup]');
+      if (!input) return;
+      const id = Number(input.dataset.cup), file = input.files[0];
+      input.value = '';
+      if (!file) return;
+      const r = await addEvidence(id, file, 'Cliente');
+      if (r.error) { document.querySelector(`[data-cerr="${id}"]`).textContent = r.error; return; }
+      caseEv.set(id, r.item.id);
+      emit('cli');
+      toast('Listo. Ricser y la fábrica ya lo pueden ver.');
+      document.querySelector(`[data-cup="${id}"]`)?.focus();
+    });
+    // A video the browser cannot play must say so instead of showing a dead player
+    $('#det').addEventListener('error', e => {
+      if (e.target.tagName === 'VIDEO') e.target.insertAdjacentHTML('afterend', '<p class="f-err">Este navegador no puede reproducir el formato. Probá con MP4 o WebM.</p>');
+    }, true);
     $('#opts').addEventListener('change', upd);
     $('#cx').addEventListener('click', () => $('#dlg').close());
     $('#dlg').addEventListener('close', () => window.__lenis?.start());

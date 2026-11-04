@@ -213,10 +213,10 @@ window.Ricser = (() => {
      the file (for example to a signed URL) and returns its final address: the interface does not change. */
   const Uploads = { async subir(file) { return URL.createObjectURL(file); } };
 
-  async function addEvidence(id, file) {
+  async function addEvidence(id, file, por = 'Técnico') {
     const v = EV.find(x => x.id === id), error = checkFile(file);
     if (error) return { error };
-    const item = { id: seq.ev++, tipo: tipoDe(file), nombre: file.name, tam: file.size, url: await Uploads.subir(file), por: 'Técnico', at: new Date().toISOString() };
+    const item = { id: seq.ev++, tipo: tipoDe(file), nombre: file.name, tam: file.size, url: await Uploads.subir(file), por, at: new Date().toISOString() };
     v.fab.evidencia.push(item);
     return { item };
   }

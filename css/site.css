@@ -87,7 +87,7 @@ html.booting main{visibility:hidden}
 
 /* Quick tracker: hangs below "Entrar al portal" and is the loudest thing in the header */
 .header-right{position:relative;flex:none;display:flex;justify-content:flex-end}
-.quick{position:absolute;right:0;top:calc(100% + 8px);width:clamp(310px,27vw,390px);transition:opacity .25s var(--ease),visibility .25s,transform .25s var(--ease)}
+.quick{position:absolute;right:0;top:calc(100% + 8px);width:clamp(345px,27vw,390px);transition:opacity .25s var(--ease),visibility .25s,transform .25s var(--ease)}
 #top.trk-off .quick{opacity:0;visibility:hidden;transform:translateY(-8px)}
 /* From scene 4 on, content scrolls under the header: it gets a solid background so the logo stays clean */
 #top.trk-off{background:rgba(0,15,22,.95)}
@@ -373,9 +373,9 @@ html.no-webgl #s3{background:var(--abyss) url(../assets/marca/ricser-logo-blanco
 .act em{margin-top:auto;padding-top:6px;font:500 11.5px var(--mono)}
 
 .tl{margin-top:16px;border-left:1px solid var(--line);padding-left:18px}
-.tl li{position:relative;padding-bottom:24px}
-.tl li:last-child{padding-bottom:2px}
-.tl li::before{content:"";position:absolute;left:-23.500px;top:6px;width:9px;height:9px;background:var(--abyss);border:2px solid var(--c);border-radius:50%}
+.tl>li{position:relative;padding-bottom:24px}
+.tl>li:last-child{padding-bottom:2px}
+.tl>li::before{content:"";position:absolute;left:-23.500px;top:6px;width:9px;height:9px;background:var(--abyss);border:2px solid var(--c);border-radius:50%}
 .tl-h{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between}
 .tl-h b{font-weight:500}
 .case{color:var(--cyan);font-weight:500}
@@ -476,7 +476,7 @@ td.mg{color:#c5fbf7;padding-top:18px}
 .fc-st{display:flex;flex-wrap:wrap;gap:4px}
 .fc-awb{font-size:13px}
 .fc-ch{width:16px;height:16px;fill:none;stroke:var(--cyan);stroke-width:1.8;transition:transform .3s var(--ease)}
-.fc-h[aria-expanded="true"] .fc-ch{transform:rotate(180deg)}
+.fc-h[aria-expanded="true"] .fc-ch,.case-row[aria-expanded="true"] .fc-ch{transform:rotate(180deg)}
 .fc-none{padding:20px;color:var(--ink2)}
 .fc-p.anim{overflow:hidden}
 .fc-in{display:grid;gap:12px;padding:14px 16px 16px;border-top:1px solid var(--line2)}
@@ -532,22 +532,34 @@ textarea[aria-invalid="true"],.fc-ob textarea[aria-invalid="true"]{border-color:
 .ch-file{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--ink2)}
 .ch-acts .btn[type=submit]{margin-left:auto;min-height:42px}
 .pz-tl{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
-.pz-tl button{display:grid;gap:3px;align-content:start;width:100%;min-height:62px;padding:0 4px 4px 0;text-align:left;background:none;border:0;color:var(--ink3);font-size:13.5px;transition:color .15s var(--ease)}
-.pz-tl button::before{content:"";display:block;height:4px;margin-bottom:6px;background:var(--line2);transition:background-color .25s var(--ease)}
+.pz-tl button,.pz-b{display:grid;gap:3px;align-content:start;width:100%;min-height:62px;padding:0 4px 4px 0;text-align:left;background:none;border:0;color:var(--ink3);font-size:13.5px;transition:color .15s var(--ease)}
+.pz-tl button::before,.pz-b::before{content:"";display:block;height:4px;margin-bottom:6px;background:var(--line2);transition:background-color .25s var(--ease)}
 .pz-tl button:hover{color:var(--ink)}
 .pz-tl b{font-weight:500}
 .pz-tl small{font:400 11.5px var(--mono);color:var(--ink3)}
-.pz-tl .d button{color:var(--ink2)}
-.pz-tl .d button::before{background:var(--steel)}
-.pz-tl .n button{color:#e4fffd}
+.pz-tl .d button,.pz-tl .d .pz-b{color:var(--ink2)}
+.pz-tl .d button::before,.pz-tl .d .pz-b::before{background:var(--steel)}
+.pz-tl .n button,.pz-tl .n .pz-b{color:#e4fffd}
 .pz-tl .n b{font-weight:700}
-.pz-tl .n button::before{background:var(--cyan);box-shadow:0 0 9px var(--cyan)}
+.pz-tl .n button::before,.pz-tl .n .pz-b::before{background:var(--cyan);box-shadow:0 0 9px var(--cyan)}
 .pz-tl button[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 .pz-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 12px}
 .pz-f .f{margin-top:6px}
 .pz-mail{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 14px;padding-top:9px;border-top:1px solid var(--line2);font-size:13px;color:var(--ink2)}
 .pz-mail b{font-weight:500;color:var(--ink)}
 .pz-mail .link{padding-top:0}
+
+/* Client view: a warranty claim expands into its detail */
+.case-row{display:grid;grid-template-columns:minmax(0,1fr) 16px;gap:2px 10px;align-items:center;width:calc(100% + 12px);margin:-4px -6px;padding:4px 6px;text-align:left;background:none;border:0;border-radius:3px;transition:background-color .15s var(--ease)}
+.case-row:hover{background:rgba(80,186,183,.07)}
+.case-row>.tl-h,.case-row>.sm{grid-column:1;min-width:0}
+.case-row>.fc-ch{grid-column:2;grid-row:1/3}
+.case-detail.anim{overflow:hidden}
+.cd-in{display:grid;gap:12px;margin-top:12px;padding:14px;background:rgba(0,15,22,.42);border:1px solid var(--line2);border-radius:3px}
+.cd-ev{display:grid;gap:9px;min-width:0}
+.cd-ev h4{margin:0;font:600 15px/1.2 var(--disp);font-stretch:110%}
+.cd-empty{min-height:92px}
+.cd-in .pz-b{min-height:50px}
 
 /* Sent mails: modal opened from the portal bar */
 .cc-mails{flex:none;gap:8px;min-height:40px;margin-left:auto;padding:0 12px;font-size:13.5px;font-weight:500}
@@ -567,7 +579,7 @@ textarea[aria-invalid="true"],.fc-ob textarea[aria-invalid="true"]{border-color:
 .mb-i b{font-weight:500;color:var(--ink);overflow-wrap:anywhere}
 .mb-i .mono{font-size:11.5px;color:var(--ink3)}
 .mb-empty{padding:12px;color:var(--ink2);font-size:14px}
-#mbPrev{display:block;width:100%;height:560px;border:1px solid var(--line2);border-radius:3px;background:#00131b}
+#mbPrev{display:block;width:100%;height:min(700px,calc(90svh - 130px));border:1px solid var(--line2);border-radius:3px;background:#00131b}
 #mbPrev[hidden]{display:none}
 
 /* Buttons, dialog, toast */
