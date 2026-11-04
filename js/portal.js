@@ -103,7 +103,9 @@ window.Portal = (() => {
     upd();
     $('#dlg').showModal();
     window.__lenis?.stop();
-    if (motion()) gsap.fromTo('#dlg', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .35, ease: 'power3.out', clearProps: 'all' });
+    // Animate the form, not the <dialog>: GSAP on the dialog itself drops it out of the modal top layer,
+    // leaving it unreachable below the fold and the page unresponsive.
+    if (motion()) gsap.fromTo('#dlgF', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .35, ease: 'power3.out', clearProps: 'transform,opacity' });
   }
 
   function upd() {
