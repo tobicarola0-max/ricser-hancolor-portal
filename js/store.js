@@ -256,7 +256,7 @@ window.Ricser = (() => {
   const Notifier = (() => {
     const cola = [], subs = [];
     const endpoint = /\.vercel\.app$/.test(location.hostname) ? '/api/notify' : null;
-    let nextId = 1;
+    let nextId = 1, real = false; // real only once the server confirms it sent one: without keys it stays in demo mode
     const tell = m => subs.forEach(fn => fn(m));
 
     async function entregar(m, data) {
@@ -264,6 +264,7 @@ window.Ricser = (() => {
         const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const j = await r.json();
         m.estado = r.ok ? (j.sent ? 'enviado' : 'demo') : 'error';
+        if (j.sent) real = true;
       } catch { m.estado = 'error'; }
       tell(m);
     }
@@ -282,7 +283,7 @@ window.Ricser = (() => {
       if (endpoint) entregar(m, data);
       return m;
     }
-    return { cola, enviar, endpoint, on: fn => subs.push(fn) };
+    return { cola, enviar, endpoint, on: fn => subs.push(fn), get real() { return real; } };
   })();
 
   // Tracker lookup: accepts case, order or air waybill, with any casing or spacing

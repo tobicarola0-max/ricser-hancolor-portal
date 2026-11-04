@@ -176,7 +176,7 @@ window.Portal = (() => {
 
   function renderInbox() {
     const list = Notifier.cola, cur = list.find(m => m.id === mailSel) || list[0];
-    $('#mbMode').textContent = Notifier.endpoint ? 'Envío real' : 'Modo demo';
+    $('#mbMode').textContent = Notifier.real ? 'Envío real' : 'Modo demo';
     $('#mbList').innerHTML = list.length ? list.map(m => `<li><button type="button" class="mb-i" data-mail="${m.id}" aria-pressed="${m === cur}">
         <b>${esc(m.subject)}</b>
         <span>Para ${esc(m.toName)} · ${esc(m.to)}</span>
