@@ -92,7 +92,14 @@
     // The pin adds its spacer after Lenis has measured the page: its scroll limit must be updated
     lenis.resize();
     ScrollTrigger.addEventListener('refresh', () => { lenis.resize(); measureA2?.(); if (tl) { hudIdx = -1; updateHud(tl.time()); } });
-    if (deepLink) { S.ring = 0; S.beam = .9; RicserBG.draw(S, 3); lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() }); return; }
+    if (deepLink) {
+      S.ring = 0; S.beam = 1;
+      gsap.set('.brand, #scenes, .skip, #hud', { clearProps: 'opacity,visibility' });
+      lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() });
+      ScrollTrigger.update();
+      RicserBG.draw(S, 3);
+      return;
+    }
     intro();
   }
 
@@ -146,13 +153,14 @@
     const stage = $('#stage'), rigOuter = $('#rigOuter');
     const heroScale = isMob ? 1.3 : 1.12;
     S.ringY = isMob ? -.2 : -.36; S.ringS = isMob ? .6 : 1;
-    const heroX = isMob ? 0 : innerWidth * .085; // leaves "CUT" clear of the machine
-    S.ringX = heroX / stage.offsetHeight;
+    const heroX = () => isMob ? 0 : innerWidth * .085; // leaves "CUT" clear of the machine
+    const heroRingX = () => heroX() / (stage.offsetHeight || innerHeight);
+    S.ringX = heroRingX();
 
     // Initial state
-    gsap.set('#v34', { rotationY: 7, transformOrigin: '50% 60%' });
+    gsap.set('#v34', { rotationY: 7, autoAlpha: 1, transformOrigin: '50% 60%' });
     gsap.set('#vF', { autoAlpha: 0, rotationY: 34, transformOrigin: '50% 60%' });
-    gsap.set('#rig', { scale: heroScale, x: heroX, transformOrigin: '50% 72%' });
+    gsap.set('#rig', { scale: heroScale, x: heroX(), y: 0, transformOrigin: '50% 72%' });
     gsap.set('#lS2, .s2-head, .s2-note, .co, .pts > g, .leaders', { autoAlpha: 0 });
     gsap.set('#s3, #s4, #s5, #routes, .cap', { autoAlpha: 0 });
     gsap.set('#nozzle', { opacity: 0 });
@@ -188,45 +196,45 @@
     tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
 
     /* ===== ESCENA 1 · THE AWAKENING ===== */
-    tl.to('.m1', { xPercent: -24, duration: 1.35, ease: 'power1.in' }, 0)
-      .to('.m2', { xPercent: 24, duration: 1.35, ease: 'power1.in' }, 0)
-      .to('#lTitle, #lOutline', { autoAlpha: 0, duration: .4 }, .85)
-      .to('#lCopy', { autoAlpha: 0, y: -24, duration: .3 }, .18)
+    tl.fromTo('.m1', { xPercent: 0 }, { xPercent: -24, duration: 1.35, ease: 'power1.in', immediateRender: false }, 0)
+      .fromTo('.m2', { xPercent: 0 }, { xPercent: 24, duration: 1.35, ease: 'power1.in', immediateRender: false }, 0)
+      .fromTo('#lTitle, #lOutline', { autoAlpha: 1 }, { autoAlpha: 0, duration: .4, immediateRender: false }, .85)
+      .fromTo('#lCopy', { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -24, duration: .3, immediateRender: false }, .18)
       .fromTo(S, { flow: .22 }, { flow: 1, duration: .75, ease: 'power2.in', immediateRender: false }, 0)
-      .to(S, { flow: .3, duration: .6, ease: 'power2.out' }, .85)
+      .fromTo(S, { flow: 1 }, { flow: .3, duration: .6, ease: 'power2.out', immediateRender: false }, .85)
       .fromTo(S, { word: 0 }, { word: 1, duration: .5, ease: 'power2.out', immediateRender: false }, .22)
-      .to(S, { word: 2, duration: .45, ease: 'power2.in' }, .9)
-      .to('#rig', { scale: heroScale * 1.1, duration: 1.1, ease: 'power1.inOut' }, 0)
-      .to('#v34', { rotationY: -5, duration: 1.1, ease: 'power1.inOut' }, 0)
-      .to('.hud-a, .hud-b', { autoAlpha: 0, duration: .2 }, 1.2);
+      .fromTo(S, { word: 1 }, { word: 2, duration: .45, ease: 'power2.in', immediateRender: false }, .9)
+      .fromTo('#rig', { scale: heroScale, x: heroX, y: 0 }, { scale: heroScale * 1.1, x: heroX, y: 0, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
+      .fromTo('#v34', { rotationY: 7 }, { rotationY: -5, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
+      .fromTo('.hud-a, .hud-b', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 1.2);
 
     // Rotation: the 3/4 photo turns toward the viewer and hands over to the front photo of the same model
-    tl.to('#v34', { rotationY: -36, duration: .5, ease: 'power2.in' }, 1.1)
-      .to('#v34', { autoAlpha: 0, duration: .16, ease: 'power1.in' }, 1.42)
-      .to('#vF', { autoAlpha: 1, duration: .16, ease: 'power1.out' }, 1.36)
-      .to('#vF', { rotationY: 0, duration: .36, ease: 'power2.out' }, 1.36)
-      .to('#rig', { scale: 1, x: 0, duration: .6, ease: 'power2.inOut' }, 1.1)
-      .to(S, { ringX: 0, duration: .6, ease: 'power2.inOut' }, 1.1)
+    tl.fromTo('#v34', { rotationY: -5 }, { rotationY: -36, duration: .5, ease: 'power2.in', immediateRender: false }, 1.1)
+      .fromTo('#v34', { autoAlpha: 1 }, { autoAlpha: 0, duration: .16, ease: 'power1.in', immediateRender: false }, 1.42)
+      .fromTo('#vF', { autoAlpha: 0 }, { autoAlpha: 1, duration: .16, ease: 'power1.out', immediateRender: false }, 1.36)
+      .fromTo('#vF', { rotationY: 34 }, { rotationY: 0, duration: .36, ease: 'power2.out', immediateRender: false }, 1.36)
+      .fromTo('#rig', { scale: heroScale * 1.1, x: heroX, y: 0 }, { scale: 1, x: 0, y: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
+      .fromTo(S, { ringX: heroRingX }, { ringX: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
       .fromTo(S, { ring: 1 }, { ring: .55, duration: .5, immediateRender: false }, 1.2);
 
     /* ===== ESCENA 2 · ANATOMÍA + RAYOS X ===== */
-    tl.set('#lS2', { autoAlpha: 1 }, 1.7)
-      .fromTo('.s2-head', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power2.out' }, 1.72)
-      .to('.mm-grid', { opacity: .9, duration: .4 }, 1.8)
-      .to(scan, { p: 1, duration: .85, ease: 'power1.inOut', onUpdate: applyScan }, 1.95)
-      .set('#fPhoto', { autoAlpha: 0 }, 2.82)
-      .to('.sch path', { strokeDashoffset: 0, duration: .32, stagger: .05, ease: 'power1.inOut' }, 2.2)
-      .set('.leaders', { autoAlpha: 1 }, 2.7)
-      .to('.s2-note', { autoAlpha: 1, duration: .1 }, 2.8);
+    tl.fromTo('#lS2', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 1.7)
+      .fromTo('.s2-head', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power2.out', immediateRender: false }, 1.72)
+      .fromTo('.mm-grid', { opacity: .5 }, { opacity: .9, duration: .4, immediateRender: false }, 1.8)
+      .fromTo(scan, { p: 0 }, { p: 1, duration: .85, ease: 'power1.inOut', immediateRender: false, onUpdate: applyScan }, 1.95)
+      .fromTo('#fPhoto', { autoAlpha: 1 }, { autoAlpha: 0, duration: .01, immediateRender: false }, 2.82)
+      .fromTo('.sch path', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .32, stagger: .05, ease: 'power1.inOut', immediateRender: false }, 2.2)
+      .fromTo('.leaders', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 2.7)
+      .fromTo('.s2-note', { autoAlpha: 0 }, { autoAlpha: 1, duration: .1, immediateRender: false }, 2.8);
 
     [1, 2, 3, 4, 5].forEach((c, k) => {
       const at = 2.78 + k * .21;
       const co = `.co[data-c="${c}"]`, side = $(co).classList.contains('co-l') ? -20 : 20;
       if (c < 5) {
-        tl.to(`.ld[data-c="${c}"]`, { strokeDashoffset: 0, duration: .15, ease: 'power1.out' }, at);
-        tl.fromTo(`.pts > [data-c="${c}"]`, { autoAlpha: 0 }, { autoAlpha: 1, duration: .05 }, at);
-      } else tl.to('.opt-b', { strokeDashoffset: 0, duration: .2 }, at + .05);
-      tl.fromTo(co, { autoAlpha: 0, x: isMob ? 0 : side, y: isMob ? 14 : 0 }, { autoAlpha: 1, x: 0, y: 0, duration: .13, ease: 'power2.out' }, at + .06);
+        tl.fromTo(`.ld[data-c="${c}"]`, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .15, ease: 'power1.out', immediateRender: false }, at);
+        tl.fromTo(`.pts > [data-c="${c}"]`, { autoAlpha: 0 }, { autoAlpha: 1, duration: .05, immediateRender: false }, at);
+      } else tl.fromTo('.opt-b', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .2, immediateRender: false }, at + .05);
+      tl.fromTo(co, { autoAlpha: 0, x: isMob ? 0 : side, y: isMob ? 14 : 0 }, { autoAlpha: 1, x: 0, y: 0, duration: .13, ease: 'power2.out', immediateRender: false }, at + .06);
       if (isMob && c < 5) tl.to(co, { autoAlpha: 0, y: -10, duration: .05 }, at + .19);
     });
 
@@ -235,53 +243,53 @@
        that resolution. So the zoom stays moderate and the layer is hidden as soon as the iris covers the screen
        (t = 4.64): above that point it would only cost memory and freeze the page on the way up. */
     tl.to('.co, .pts, .ld, .s2-head, .s2-note', { autoAlpha: 0, duration: .12 }, 3.92)
-      .to('.sch', { autoAlpha: 0, duration: .2 }, 3.96)
-      .to('#vF .v-glow', { autoAlpha: 0, duration: .15 }, 3.95)
-      .to('#nozzle', { opacity: 1, duration: .1 }, 3.95)
+      .fromTo('.sch', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 3.96)
+      .fromTo('#vF .v-glow', { autoAlpha: .75 }, { autoAlpha: 0, duration: .15, immediateRender: false }, 3.95)
+      .fromTo('#nozzle', { opacity: 0 }, { opacity: 1, duration: .1, immediateRender: false }, 3.95)
       .set('#rig', { transformOrigin: `50% ${nozzleY * 100}%` }, 3.92)
-      .to('#rig', { scale: isMob ? 20 : 16, y: anchorOffsetY, duration: .82, ease: 'power3.in' }, 3.95)
-      .to(S, { ring: 0, flow: 0, duration: .35 }, 3.95)
-      .set(s3, { autoAlpha: 1 }, 4.3)
-      .to(ir1, { r: 1, duration: .46, ease: 'power2.in', onUpdate: () => applyIris(s3, ir1.r, innerWidth / 2, stage.offsetHeight / 2) }, 4.3)
+      .fromTo('#rig', { scale: 1, x: 0, y: 0 }, { scale: isMob ? 20 : 16, x: 0, y: anchorOffsetY, duration: .82, ease: 'power3.in', immediateRender: false }, 3.95)
+      .fromTo(S, { ring: .55, flow: .3 }, { ring: 0, flow: 0, duration: .35, immediateRender: false }, 3.95)
+      .fromTo(s3, { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 4.3)
+      .fromTo(ir1, { r: 0 }, { r: 1, duration: .46, ease: 'power2.in', immediateRender: false, onUpdate: () => applyIris(s3, ir1.r, innerWidth / 2, stage.offsetHeight / 2) }, 4.3)
       .fromTo(S, { htZoom: .55 }, { htZoom: 1, duration: .62, ease: 'power2.out', immediateRender: false }, 4.3)
-      .set('#lMachine, #lS2, #flowFront, #flowBack', { autoAlpha: 0 }, 4.64);
+      .fromTo('#lMachine, #lS2, #flowFront, #flowBack', { autoAlpha: 1 }, { autoAlpha: 0, duration: .01, immediateRender: false }, 4.64);
 
     /* ===== ESCENA 3 · NÚCLEO HALFTONE ===== */
     const capIO = (id, a, b) => {
-      tl.fromTo(id, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .15, ease: 'power2.out' }, a)
+      tl.fromTo(id, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .15, ease: 'power2.out', immediateRender: false }, a)
         .to(id, { autoAlpha: 0, y: -18, duration: .12, ease: 'power2.in' }, b);
     };
     capIO('#capA', 4.68, 5.02);
-    tl.to(S, { morph: 1, duration: .68, ease: 'power1.inOut' }, 5.05);
+    tl.fromTo(S, { morph: 0 }, { morph: 1, duration: .68, ease: 'power1.inOut', immediateRender: false }, 5.05);
     capIO('#capB', 5.55, 5.92);
-    tl.to(S, { morph: 2, duration: .68, ease: 'power1.inOut' }, 5.96)
-      .to('#routes', { autoAlpha: 1, duration: .2 }, 6.5);
+    tl.fromTo(S, { morph: 1 }, { morph: 2, duration: .68, ease: 'power1.inOut', immediateRender: false }, 5.96)
+      .fromTo('#routes', { autoAlpha: 0 }, { autoAlpha: 1, duration: .2, immediateRender: false }, 6.5);
     capIO('#capC', 6.42, 6.98);
 
-    tl.to('#routes', { autoAlpha: 0, duration: .12 }, 6.95)
-      .to(S, { blow: 1, duration: .5, ease: 'power2.in' }, 6.95)
+    tl.fromTo('#routes', { autoAlpha: 1 }, { autoAlpha: 0, duration: .12, immediateRender: false }, 6.95)
+      .fromTo(S, { blow: 0 }, { blow: 1, duration: .5, ease: 'power2.in', immediateRender: false }, 6.95)
       .fromTo(S, { beam: 1 }, { beam: .75, duration: .1, immediateRender: false }, 6.95)
-      .to(s3, { autoAlpha: 0, duration: .32 }, 7.12);
+      .fromTo(s3, { autoAlpha: 1 }, { autoAlpha: 0, duration: .32, immediateRender: false }, 7.12);
 
     /* ===== ESCENA 4 · TELEMETRÍA ===== */
-    tl.set('#s4', { autoAlpha: 1 }, 7.12)
-      .to('.hud-c', { autoAlpha: 0, duration: .1 }, 7.1)
-      .fromTo('.s4-top > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .2, stagger: .04, ease: 'power2.out' }, 7.18)
-      .fromTo('#cockpit', { autoAlpha: 0, y: 46 }, { autoAlpha: 1, y: 0, duration: .24, ease: 'power2.out' }, 7.26)
-      .to(S, { beam: 1, duration: P2 - 7.5 }, 7.5); // the light keeps answering the scroll while the tracker holds still
+    tl.fromTo('#s4', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 7.12)
+      .fromTo('.hud-c', { autoAlpha: 1 }, { autoAlpha: 0, duration: .1, immediateRender: false }, 7.1)
+      .fromTo('.s4-top > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .2, stagger: .04, ease: 'power2.out', immediateRender: false }, 7.18)
+      .fromTo('#cockpit', { autoAlpha: 0, y: 46 }, { autoAlpha: 1, y: 0, duration: .24, ease: 'power2.out', immediateRender: false }, 7.26)
+      .fromTo(S, { beam: .75 }, { beam: 1, duration: P2 - 7.5, immediateRender: false }, 7.5); // the light keeps answering the scroll while the tracker holds still
 
     /* ===== PORTAL #2 · into the final registration mark =====
        The tracker only zooms a little and fades: the iris growing out of the mark does the deep zoom.
        Zooming the whole tracker froze the page for seconds when scrolling back up (see the note on portal #1). */
     const cam2 = { p: 0 }, Z2 = isMob ? 5 : 4, s4in = $('#s4in');
-    // Marker position with the camera at rest, measured only when it can change (not on every scroll tick)
+    // Marker position in #stage coordinates with the camera at rest, independent of viewport scroll offset
     measureA2 = () => {
       const cp = $('#cockpit'), keep = [s4in.style.transform, cp.style.transform];
       s4in.style.transform = cp.style.transform = 'none';
       a2 = Tracker.anchor();
-      const b = s4in.getBoundingClientRect();
+      const sr = stage.getBoundingClientRect(), b = s4in.getBoundingClientRect();
       s4in.style.transform = keep[0]; cp.style.transform = keep[1];
-      s4in.style.transformOrigin = `${a2.x - b.left}px ${a2.y - b.top}px`;
+      s4in.style.transformOrigin = `${a2.x - (b.left - sr.left)}px ${a2.y - (b.top - sr.top)}px`;
     };
     measureA2();
     Tracker.onRender(measureA2);
@@ -295,13 +303,13 @@
       const k = slide();
       return [a2.x + (innerWidth / 2 - a2.x) * k, a2.y + (stage.offsetHeight / 2 - a2.y) * k];
     };
-    tl.to(cam2, { p: 1, duration: .78, onUpdate: applyCam2 }, P2)
-      .to('#s4in > *', { autoAlpha: 0, duration: .2 }, P2 + .42)
-      .set(s5, { autoAlpha: 1 }, P2 + .3)
-      .to(ir2, { r: 1, duration: .46, ease: 'power2.in', onUpdate: () => { const c = center2(); applyIris(s5, ir2.r, c[0], c[1]); } }, P2 + .3)
+    tl.fromTo(cam2, { p: 0 }, { p: 1, duration: .78, immediateRender: false, onUpdate: applyCam2 }, P2)
+      .fromTo('#s4in > *', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, P2 + .42)
+      .fromTo(s5, { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, P2 + .3)
+      .fromTo(ir2, { r: 0 }, { r: 1, duration: .46, ease: 'power2.in', immediateRender: false, onUpdate: () => { const c = center2(); applyIris(s5, ir2.r, c[0], c[1]); } }, P2 + .3)
       .fromTo('.s5-in', { scale: .84 }, { scale: 1, duration: .5, ease: 'power2.out', immediateRender: false }, P2 + .3)
-      .fromTo('.s5-in > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .18, stagger: .035, ease: 'power2.out' }, P2 + .6)
-      .set('#s4', { autoAlpha: 0 }, P2 + .64)
+      .fromTo('.s5-in > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .18, stagger: .035, ease: 'power2.out', immediateRender: false }, P2 + .6)
+      .fromTo('#s4', { autoAlpha: 1 }, { autoAlpha: 0, duration: .01, immediateRender: false }, P2 + .64)
       .to({}, { duration: TOTAL - (P2 + .78) }, P2 + .78); // hold on the landing frame until the pin releases
 
     st = ScrollTrigger.create({
@@ -319,7 +327,8 @@
     let routesOn = true;
     tl.eventCallback('onUpdate', () => {
       const t = tl.time();
-      if (t > 7.32 && !played) { played = true; Tracker.play(); }
+      if (t < 7.05 || t > 8.45) played = false;
+      else if (t >= 7.35 && t <= 8.35 && !played) { played = true; Tracker.play(); }
       s4El.classList.toggle('live', t > 7.2 && t < P2 + .02); // interactive only while the tracker is on screen
       lCopy.classList.toggle('live', t < .3);
       // Dedicated GPU layer only during each zoom: leaving the band resets the resolution of that layer
@@ -387,7 +396,7 @@
     $('#quickTrk').addEventListener('submit', e => {
       e.preventDefault();
       played = false;
-      Tracker.search($('#quickIn').value);
+      Tracker.search($('#quickIn').value, { deferPlay: true });
       go('s4');
     });
   }

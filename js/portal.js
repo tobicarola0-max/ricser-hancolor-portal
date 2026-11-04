@@ -287,7 +287,7 @@ window.Portal = (() => {
       const a = e.target.closest('.act');
       if (a) { openDlg(a.dataset.t); return; }
       const t = e.target.closest('[data-track]');
-      if (t) { Tracker.search(t.dataset.track); window.Cinema?.go('s4'); }
+      if (t) { Tracker.search(t.dataset.track, { deferPlay: true }); window.Cinema?.go('s4'); }
     });
     $('#opts').addEventListener('change', upd);
     $('#cx').addEventListener('click', () => $('#dlg').close());

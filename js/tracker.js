@@ -111,7 +111,7 @@ window.Tracker = (() => {
     el.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${a})`);
   }
 
-  function animate(e, from) {
+  function animate(e, from, deferPlay) {
     const path = $('#rLit'), glow = $('#rGlow');
     if (!path) return;
     const s = stops(e, path), L = nodeLens(e, path), plane = $('#vPlane'), truck = $('#vTruck'), total = path.getTotalLength();
@@ -124,7 +124,10 @@ window.Tracker = (() => {
       place(truck, path, state.truck, true);
     };
     if (vehTween) vehTween.kill();
-    if (motion()) {
+    if (deferPlay && motion()) {
+      apply();
+      lastPos = null;
+    } else if (motion()) {
       vehTween = gsap.to(state, { lit: s.lit, plane: s.plane === undefined ? 0 : s.plane, truck: s.truck, duration: 1.8, ease: 'power2.inOut', onUpdate: apply, onComplete: () => { lastPos = Object.assign({}, state); } });
     } else {
       Object.assign(state, { lit: s.lit, plane: s.plane || 0, truck: s.truck }); apply(); lastPos = Object.assign({}, state);
@@ -137,34 +140,41 @@ window.Tracker = (() => {
     $('#rFlow')?.classList.toggle('off', done(e));
   }
 
-  function eqButtons() {
+  function syncChips(selectedEqId) {
+    const activeEq = selectedEqId !== undefined ? selectedEqId : (cur && cur.eq);
     $('#trkEq').innerHTML = EQ.map(q => {
-      const sel = cur && cur.eq === q.id;
-      return `<button type="button" class="chip chip-eq" data-eq="${q.id}" aria-pressed="${sel}"><img src="${q.img}" alt="" width="${q.iw}" height="${q.ih}" loading="lazy"><span>${esc(q.m)}</span></button>`;
+      const sel = activeEq === q.id;
+      return `<button type="button" class="chip chip-eq" data-eq="${q.id}" aria-pressed="${!!sel}"><img src="${q.img}" alt="" width="${q.iw}" height="${q.ih}" loading="lazy"><span>${esc(q.m)}</span></button>`;
     }).join('');
+    document.querySelectorAll('.trk-quick [data-code]').forEach(btn => {
+      const code = btn.dataset.code;
+      const isMatch = !!cur && [cur.caso, cur.pedido, cur.guia].some(c => c && c === code);
+      btn.setAttribute('aria-pressed', String(isMatch));
+    });
   }
 
-  function render(animFrom) {
+  function render(animFrom, opts = {}) {
     const box = $('#cockpit');
-    eqButtons();
+    syncChips(opts.eqId);
     if (!cur) {
       box.innerHTML = `<div class="cp-empty">${ICON.reg}<p><b>Sin envíos en curso para este equipo.</b></p><p>Si necesitás un repuesto, abrí un reclamo desde el portal del cliente.</p><button type="button" class="btn ghost" data-go="portal">Ir al portal</button></div>`;
+      renderHook?.();
       return;
     }
     const q = EQ.find(x => x.id === cur.eq);
     box.innerHTML = header(cur, q) + `<div class="cp-rail">${svg(cur)}${list(cur)}</div>` + dataStrip(cur, q);
-    animate(cur, animFrom);
+    animate(cur, animFrom, opts.deferPlay);
     renderHook?.();
   }
 
   function select(e, opts = {}) {
     const same = cur && e && cur.id === e.id;
     cur = e;
-    render(same ? lastPos : null);
+    render(same && !opts.deferPlay ? lastPos : null, opts);
     if (opts.fromSearch) $('#trkMsg').textContent = '';
   }
 
-  function search(q) {
+  function search(q, opts = {}) {
     const msg = $('#trkMsg');
     if (!String(q || '').trim()) { msg.textContent = 'Ingresá un código, por ejemplo GAR-2026-0042.'; msg.className = 'err'; return false; }
     const hit = findShipment(q);
@@ -175,7 +185,7 @@ window.Tracker = (() => {
     }
     msg.textContent = ''; msg.className = '';
     $('#trkIn').value = codeOf(hit);
-    select(hit, { fromSearch: true });
+    select(hit, { fromSearch: true, deferPlay: !!opts.deferPlay });
     return true;
   }
 
@@ -188,9 +198,13 @@ window.Tracker = (() => {
       if (b) {
         const list = shipmentsOf(b.dataset.eq);
         const msg = $('#trkMsg'); msg.textContent = ''; msg.className = '';
-        select(list[0] || null);
-        if (list[0]) $('#trkIn').value = codeOf(list[0]);
-        else { cur = null; render(); const qq = EQ.find(x => x.id === b.dataset.eq); document.querySelectorAll('#trkEq .chip-eq').forEach(x => x.setAttribute('aria-pressed', x.dataset.eq === qq.id)); }
+        if (list[0]) {
+          $('#trkIn').value = codeOf(list[0]);
+          select(list[0]);
+        } else {
+          $('#trkIn').value = '';
+          select(null, { eqId: b.dataset.eq });
+        }
       }
     });
     cur = findShipment('GAR-2026-0042');
@@ -199,24 +213,26 @@ window.Tracker = (() => {
     on(src => {
       // Keep the open shipment live; if a new order was just created, stay on the current one
       if (cur) render(lastPos);
-      else eqButtons();
+      else syncChips();
     });
   }
 
   // Called by the timeline when the scene arrives, so the plane takes off on screen.
   // It only restarts the vehicles: rebuilding the rail here would stall the scroll in progress.
   function play() {
-    if (cur) animate(cur, null);
+    if (cur) animate(cur, null, false);
   }
   const onRender = fn => { renderHook = fn; };
 
-  // Screen position of the final stage marker: the camera flies into it in portal #2
+  // Stage-local position of the final stage marker: the camera flies into it in portal #2
   function anchor() {
+    const stage = document.getElementById('stage');
+    const sr = stage ? stage.getBoundingClientRect() : { left: 0, top: 0, width: innerWidth, height: innerHeight };
     const els = [...document.querySelectorAll('#cockpit .portal-target')];
     const el = els.find(x => x.getBoundingClientRect().width > 0);
-    if (!el) return { x: innerWidth / 2, y: innerHeight / 2 };
+    if (!el) return { x: sr.width / 2, y: sr.height / 2 };
     const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 };
   }
 
   return { init, search, play, anchor, select, onRender };
