@@ -31,10 +31,16 @@ window.Tracker = (() => {
 
   function dataStrip(e, q) {
     const T = TYPES[e.t];
-    const rows = [
-      [e.t === 'repuesto' ? 'Pieza' : 'Pedido', esc(e.ti)],
+    const rows = e.t === 'repuesto' ? [
+      ['Pieza', esc(e.ti)],
+      ['Guía aérea', e.guia ? esc(e.guia) : 'Pendiente de fábrica'],
+      ['Transportista', e.carrier ? esc(e.carrier) : 'A confirmar'],
+      ['Llegada estimada', e.eta ? fmt(e.eta) : 'A confirmar'],
+      ['Etapa', `${e.s + 1} de ${T.steps.length}`],
+    ] : [
+      ['Pedido', esc(e.ti)],
       ['Inicio', fmt(e.d)],
-      e.t === 'repuesto' ? ['Guía aérea', e.guia ? esc(e.guia) : 'Pendiente de fábrica'] : ['Transporte', 'Distribución local'],
+      ['Transporte', 'Distribución local'],
       ['Etapa', `${e.s + 1} de ${T.steps.length}`],
     ];
     return `<dl class="cp-data">${rows.map(r => `<div><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('')}</dl>`;
@@ -62,7 +68,7 @@ window.Tracker = (() => {
       // two-line labels so that long stage names never collide
       const mid = Math.ceil(label.length / 2);
       const lines = label.length > 1 ? [label.slice(0, mid).join(' '), label.slice(mid).join(' ')] : [T.steps[k]];
-      const ly = air ? n[1] - 34 - (lines.length - 1) * 18 : n[1] + 34;
+      const ly = air ? n[1] - 34 - (lines.length - 1) * 18 : n[1] + 46; // clears the vehicle parked on the node
       const anchor = k === 0 ? 'start' : last ? 'end' : 'middle';
       const lx = k === 0 ? n[0] - 16 : last ? n[0] + 16 : n[0];
       return `<g class="node ${st}">

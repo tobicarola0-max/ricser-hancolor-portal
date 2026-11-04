@@ -46,7 +46,9 @@
   gsap.ticker.add(t => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
 
-  const deepLink = location.hash === '#portal';
+  // The link in the client e-mail opens straight on that case in the tracker
+  const deepCase = new URLSearchParams(location.search).get('caso');
+  const deepLink = location.hash === '#portal' || !!deepCase;
   let tl = null, st = null, bgPaused = false, hudIdx = -1, played = false, measureA2 = null;
   const irisEl = $('#iris');
 
@@ -83,6 +85,7 @@
   }
 
   function start() {
+    html.classList.remove('booting');
     RicserBG.init($('#bg'));
     Flow.init($('#flowBack'), $('#flowFront'));
     if (!Halftone.init($('#halftone'))) html.classList.add('no-webgl');
@@ -105,7 +108,8 @@
     if (deepLink) {
       S.ring = 0; S.beam = 1;
       gsap.set('.brand, #scenes, .hd-r, #hud', { clearProps: 'opacity,visibility' });
-      lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() });
+      if (deepCase && Tracker.search(deepCase, { deferPlay: true })) lenis.scrollTo(st.start + (st.end - st.start) * LABELS.s4 / TOTAL, { immediate: true, force: true });
+      else lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() });
       ScrollTrigger.update();
       RicserBG.draw(S, 3);
       return;
@@ -307,15 +311,13 @@
       invalidateOnRefresh: true,
     });
 
-    const s4El = $('#s4'), topEl = $('#top'), lS2 = $('#lS2'), routes = $('#routes');
+    const s4El = $('#s4'), lS2 = $('#lS2'), routes = $('#routes');
     let routesOn = true, fiOn = false;
     tl.eventCallback('onUpdate', () => {
       const t = tl.time();
       if (t < 7.05 || t > 8.45) played = false;
       else if (t >= 7.35 && t <= 8.35 && !played) { played = true; Tracker.play(); }
       s4El.classList.toggle('live', t > 7.2 && t < P2 + .02); // interactive only while the tracker is on screen
-      // Scene 4 has its own search field and the portal its own bar: the quick tracker steps aside for both
-      topEl.classList.toggle('trk-off', t > 7.05);
       // Dedicated GPU layer only during each zoom: leaving the band resets the resolution of that layer
       fiStage.classList.toggle('zoom', t > 3.9 && t < 4.66);
       // The sheet is interactive only while it holds still; its callouts draw again on every arrival
@@ -338,10 +340,14 @@
   }
 
   /* ---------- Per-frame drawing, only for the layers on screen ---------- */
-  let flowClear = false;
+  let flowClear = false, trkOff = false;
   function render(time, deltaMs) {
     const dt = Math.min(.05, deltaMs / 1000);
     const t = tl ? tl.time() : 0;
+    // Scene 4 has its own search field and the portal its own bar: the quick tracker steps aside for both.
+    // Checked every frame so it also holds when the page opens directly on one of them.
+    const off = t > 7.05;
+    if (off !== trkOff) { trkOff = off; $('#top').classList.toggle('trk-off', off); }
     if (!bgPaused && (t < 4.66 || t > 7)) RicserBG.draw(S, time);
     if (t < 4.66) { Flow.draw(S, dt, time); flowClear = false; }
     else if (!flowClear) { Flow.draw({ flow: 0, word: 0 }, dt, time); flowClear = true; }
@@ -428,13 +434,16 @@
 
   /* ---------- Fallback: reduced motion, or the animation CDN could not load ---------- */
   function staticMode() {
+    html.classList.remove('booting');
     html.classList.add('static');
     RicserBG.init($('#bg'));
     S.ring = .7; S.beam = 1; S.morph = 1; S.htZoom = 1;
     RicserBG.draw(S, 3);
     if (!Halftone.init($('#halftone'))) html.classList.add('no-webgl');
     else Halftone.draw(S, 0, 3);
-    Tracker.search('GAR-2026-0042');
+    const caso = new URLSearchParams(location.search).get('caso');
+    Tracker.search(caso || 'GAR-2026-0042');
+    if (caso) $('#s4').scrollIntoView();
     Ficha.enter();
     const map = { s1: '#stage', s2: '#lS2', s3: '#s3', s4: '#s4', portal: '#portal' };
     window.Cinema = { go: n => $(map[n]).scrollIntoView() };

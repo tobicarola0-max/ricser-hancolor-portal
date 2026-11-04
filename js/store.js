@@ -10,7 +10,7 @@ window.Ricser = (() => {
   };
 
   const TYPES = {
-    repuesto: { n: 'Reclamo de garantía', c: 'var(--red)', v: 'plane', steps: ['Reclamo enviado', 'Fábrica evalúa', 'Aprobado', 'Pieza en vuelo', 'En distribución local', 'Entregada e instalada'] },
+    repuesto: { n: 'Reclamo de garantía', c: 'var(--red)', v: 'plane', steps: ['Solicitada', 'Aprobada', 'En producción', 'Despachada', 'En aduana', 'Entregada'] },
     remoto: { n: 'Servicio remoto', c: 'var(--cyan)', steps: ['Solicitado', 'Agendado', 'Pago confirmado', 'Realizado'] },
     visita: { n: 'Visita técnica', c: 'var(--amber)', steps: ['Solicitada', 'Técnico asignado', 'En sitio', 'Informe enviado'] },
     insumo: { n: 'Pedido de insumos', c: 'var(--sky)', v: 'truck', steps: ['Pedido', 'Preparando', 'Despachado', 'Entregado'] },
@@ -117,9 +117,20 @@ window.Ricser = (() => {
     { id: 2, eq: 'e1', t: 'visita', ti: 'Mantenimiento preventivo', d: '2025-11-05', s: 3, tec: 'M. Rossi', cost: 140, price: 260, note: 'Cabezal 2 con desgaste, ofrecer repuesto en la próxima visita.' },
     { id: 3, eq: 'e1', t: 'insumo', ti: 'Tinta UV CMYK ×4 + limpiador', d: '2026-10-30', s: 2, pedido: 'PED-2026-0003', tec: 'Depósito', cost: 610, price: 820, note: '' },
     { id: 4, eq: 'e2', t: 'instalacion', ti: 'Instalación y puesta en marcha', d: '2026-01-22', s: 0, tec: 'L. Giménez', cost: 150, price: 0, note: '' },
-    { id: 5, eq: 'e2', t: 'repuesto', ti: 'Cabezal de impresión', d: '2026-10-20', s: 3, caso: 'GAR-2026-0042', guia: 'AWB 176-4410 2290', falla: 'El cabezal 2 imprime con líneas blancas.', tec: 'Importaciones', cost: 540, price: 0, note: 'RMA 8841 con el proveedor. Llega por courier, sin aduana.' },
+    { id: 5, eq: 'e2', t: 'repuesto', ti: 'Cabezal de impresión', d: '2026-10-20', s: 3, caso: 'GAR-2026-0042', guia: 'AWB 176-4410 2290', carrier: 'Courier aéreo', eta: '2026-11-12', notas: '', hist: { 0: '2026-10-20', 1: '2026-10-21', 2: '2026-10-22', 3: '2026-10-24' }, falla: 'El cabezal 2 imprime con líneas blancas.', tec: 'Importaciones', cost: 540, price: 0, note: 'RMA 8841 con el proveedor.',
+      fab: {
+        estado: 'enviado', enviadoEl: '2026-10-20', evidencia: [],
+        obs: 'El cabezal 2 deja líneas blancas después de la purga y del test de boquillas. Los otros cabezales imprimen bien.',
+        chat: [
+          { rol: 'tec', autor: 'L. Giménez', at: '2026-10-20T10:12:00', txt: 'Cargué la observación. Sigue con líneas blancas después de la purga.' },
+          { rol: 'fab', autor: 'HanColor', at: '2026-10-21T08:40:00', txt: 'Recibido. Aprobamos el reemplazo del cabezal.' },
+          { rol: 'ricser', autor: 'Ricser SRL', at: '2026-10-24T15:05:00', txt: 'Pieza despachada. Ya cargamos la guía aérea.' },
+        ],
+      } },
     { id: 6, eq: 'e2', t: 'remoto', ti: 'Calibración del equipo', d: '2026-10-29', s: 1, tec: 'L. Giménez', cost: 30, price: 150, note: 'Esperar el cabezal nuevo antes de calibrar.' },
     { id: 7, eq: 'e3', t: 'visita', ti: 'Cambio de tubo láser', d: '2025-12-12', s: 3, tec: 'M. Rossi', cost: 420, price: 690, note: 'Cliente fuera de garantía, ofrecer contrato anual.' },
+    { id: 8, eq: 'e1', t: 'repuesto', ti: 'Bomba de tinta', d: '2026-11-02', s: 0, caso: 'GAR-2026-0043', guia: '', carrier: '', eta: '', notas: '', hist: { 0: '2026-11-02' }, falla: 'Pierde presión en el circuito de tinta blanca.', tec: 'M. Rossi', cost: 0, price: 0, note: '',
+      fab: { estado: 'diagnostico', obs: '', evidencia: [], chat: [] } },
   ];
 
   // [tabla, descripción, campos[[nombre, visibilidad]], tablas a las que apunta]
@@ -127,11 +138,12 @@ window.Ricser = (() => {
     ['clientes', 'Una fila por empresa', [['razon_social', 'c'], ['cuit', 'c'], ['contactos y usuarios del portal', 'c'], ['dirección de planta', 'c'], ['segmento (gráfica / textil)', 'i'], ['condición de pago y crédito', 'i'], ['notas comerciales', 'i']], []],
     ['equipos', 'El corazón de la base', [['modelo y número de serie', 'c'], ['fecha de instalación', 'c'], ['garantía hasta', 'c'], ['horas de uso', 'c'], ['estado actual', 'c'], ['lote y proveedor de origen', 'i'], ['costo de importación', 'i'], ['contrato de mantenimiento', 'i']], ['clientes']],
     ['eventos_servicio', 'Línea de tiempo única por equipo', [['equipo_id y tipo', 'c'], ['título y fecha', 'c'], ['estado y paso actual', 'c'], ['usuario que lo pidió', 'c'], ['técnico responsable', 'i'], ['costo y precio', 'i'], ['nota interna', 'i'], ['prioridad y SLA', 'i']], ['equipos']],
-    ['casos_garantia', 'Reclamos a la fábrica, con número de caso', [['número de caso (GAR-AAAA-NNNN)', 'cf'], ['modelo y serie del equipo', 'cf'], ['fecha de instalación', 'cf'], ['pieza y descripción de la falla', 'cf'], ['fotos y videos de evidencia', 'cf'], ['estado del reclamo', 'cf'], ['guía aérea del envío', 'cf'], ['empresa cliente y contacto', 'i'], ['costo, RMA interno y notas', 'i']], ['eventos_servicio']],
-    ['repuestos_solicitados', 'Pieza concreta de cada caso', [['pieza y cantidad', 'c'], ['cubierto por garantía (sí/no)', 'c'], ['guía de seguimiento del envío', 'c'], ['proveedor y número de RMA', 'i'], ['costo de la pieza', 'i'], ['stock reservado', 'i']], ['casos_garantia']],
+    ['casos_garantia', 'Reclamos a la fábrica, con número de caso', [['número de caso (GAR-AAAA-NNNN)', 'cf'], ['modelo y serie del equipo', 'cf'], ['fecha de instalación', 'cf'], ['pieza y descripción de la falla', 'cf'], ['fotos y videos de evidencia', 'cf'], ['observación técnica', 'cf'], ['chat interno del caso', 'cf'], ['estado del reclamo', 'cf'], ['guía aérea del envío', 'cf'], ['empresa cliente y contacto', 'i'], ['costo, RMA interno y notas', 'i']], ['eventos_servicio']],
+    ['repuestos_solicitados', 'Pieza concreta de cada caso', [['pieza y cantidad', 'c'], ['cubierto por garantía (sí/no)', 'c'], ['guía de seguimiento del envío', 'c'], ['etapa, transportista, ETA y notas', 'c'], ['proveedor y número de RMA', 'i'], ['costo de la pieza', 'i'], ['stock reservado', 'i']], ['casos_garantia']],
     ['servicios_remotos', 'Migración, calibración, capacitación', [['tipo de servicio', 'c'], ['precio USD (50 a 150)', 'c'], ['estado de pago', 'c'], ['día y horario', 'c'], ['enlace de la sesión', 'c'], ['técnico y minutos usados', 'i'], ['grabación y checklist', 'i']], ['eventos_servicio']],
     ['visitas_tecnicas', 'Servicios presenciales', [['urgencia y motivo', 'c'], ['fecha de visita', 'c'], ['informe de la visita (PDF)', 'c'], ['técnico y horas', 'i'], ['viáticos y traslado', 'i'], ['recomendaciones comerciales', 'i']], ['eventos_servicio']],
     ['pedidos_insumos', 'Consumibles', [['ítems y cantidades', 'c'], ['estado del despacho', 'c'], ['transporte y guía', 'c'], ['costo y margen', 'i'], ['depósito de origen', 'i']], ['eventos_servicio']],
+    ['notificaciones', 'Mails al cliente por cada avance', [['caso y etapa', 'c'], ['asunto y fecha de envío', 'c'], ['destinatario', 'i'], ['estado de entrega', 'i']], ['casos_garantia']],
     ['usuarios_y_roles', 'Quién ve qué', [['cliente (solo su empresa)', 'c'], ['técnico (sus asignaciones)', 'i'], ['administración (todo)', 'i'], ['registro de cambios (auditoría)', 'i']], ['clientes']],
   ];
 
@@ -154,7 +166,7 @@ window.Ricser = (() => {
     return { t: 'Operativo', c: 'ok' };
   };
 
-  const seq = { id: 8, gar: 42, ped: 3 };
+  const seq = { id: 9, gar: 43, ped: 3, ev: 1 };
   const subs = [];
   const on = fn => subs.push(fn);
   const emit = src => subs.forEach(fn => fn(src));
@@ -162,7 +174,10 @@ window.Ricser = (() => {
   function addEvent(o) {
     const year = new Date().getFullYear();
     const ev = Object.assign({ id: seq.id++, d: todayISO(), s: 0, tec: 'Sin asignar', cost: 0, price: 0, note: '' }, o);
-    if (o.t === 'repuesto') ev.caso = `GAR-${year}-${String(++seq.gar).padStart(4, '0')}`;
+    if (o.t === 'repuesto') {
+      ev.caso = `GAR-${year}-${String(++seq.gar).padStart(4, '0')}`;
+      Object.assign(ev, { guia: '', carrier: '', eta: '', notas: '', hist: { 0: ev.d }, fab: { estado: 'diagnostico', obs: '', evidencia: [], chat: [] } });
+    }
     if (o.t === 'insumo') ev.pedido = `PED-${year}-${String(++seq.ped).padStart(4, '0')}`;
     EV.push(ev);
     emit('add');
@@ -172,10 +187,103 @@ window.Ricser = (() => {
   function updateEvent(id, key, value, src) {
     const v = EV.find(x => x.id === id);
     if (!v) return null;
+    const before = v[key];
     v[key] = ['s', 'cost', 'price'].includes(key) ? (Number(value) || 0) : value;
+    const changed = v[key] !== before;
+    if (changed && key === 's' && v.hist) v.hist[v.s] = v.hist[v.s] || todayISO();
     emit(src);
+    // Every step of a spare part tells the client, whichever view it was changed from
+    if (changed && v.t === 'repuesto' && ['s', 'guia', 'eta'].includes(key)) Notifier.enviar(v, key);
     return v;
   }
+
+  /* ---------- Evidence and uploads ---------- */
+  const LIMITS = { video: 200, imagen: 15, pdf: 25 }; // MB
+  const tipoDe = f => (f.type.startsWith('video/') ? 'video' : f.type.startsWith('image/') ? 'imagen' : f.type === 'application/pdf' ? 'pdf' : '');
+
+  function checkFile(file, allowPdf) {
+    const t = tipoDe(file);
+    if (!t || (t === 'pdf' && !allowPdf)) return allowPdf ? 'Solo se aceptan videos, fotos o PDF.' : 'Solo se aceptan videos o fotos.';
+    if (!file.size) return 'El archivo está vacío.';
+    if (file.size > LIMITS[t] * 1048576) return `"${file.name}" pesa ${Math.ceil(file.size / 1048576)} MB. El máximo es ${LIMITS[t]} MB.`;
+    return null;
+  }
+
+  /* Prototype storage: the file stays in this tab. For real storage change only this function so it uploads
+     the file (for example to a signed URL) and returns its final address: the interface does not change. */
+  const Uploads = { async subir(file) { return URL.createObjectURL(file); } };
+
+  async function addEvidence(id, file) {
+    const v = EV.find(x => x.id === id), error = checkFile(file);
+    if (error) return { error };
+    const item = { id: seq.ev++, tipo: tipoDe(file), nombre: file.name, tam: file.size, url: await Uploads.subir(file), por: 'Técnico', at: new Date().toISOString() };
+    v.fab.evidencia.push(item);
+    return { item };
+  }
+
+  function removeEvidence(id, evId) {
+    const f = EV.find(x => x.id === id).fab, k = f.evidencia.findIndex(x => x.id === evId);
+    if (k < 0) return;
+    if (f.evidencia[k].url.startsWith('blob:')) URL.revokeObjectURL(f.evidencia[k].url);
+    f.evidencia.splice(k, 1);
+  }
+
+  const ROLES = { tec: { rol: 'Técnico', autor: 'Técnico' }, ricser: { rol: 'Ricser', autor: 'Ricser SRL' }, fab: { rol: 'Fábrica', autor: 'HanColor' } };
+
+  async function addMessage(id, { rol, txt, file }) {
+    const v = EV.find(x => x.id === id);
+    const m = { rol, autor: rol === 'tec' && v.tec !== 'Sin asignar' && v.tec !== 'Importaciones' ? v.tec : ROLES[rol].autor, at: new Date().toISOString(), txt };
+    if (file) m.adjunto = { tipo: tipoDe(file), nombre: file.name, url: await Uploads.subir(file) };
+    v.fab.chat.push(m);
+    return m;
+  }
+
+  // The factory only receives a case once the technician has explained what happens
+  function sendToFactory(id, obs) {
+    const v = EV.find(x => x.id === id), text = String(obs || '').trim();
+    if (!text) return { ok: false, error: 'Escribí la observación técnica antes de enviar el caso a fábrica.' };
+    v.fab.obs = text;
+    v.fab.estado = 'enviado';
+    v.fab.enviadoEl = todayISO();
+    emit('fab');
+    return { ok: true };
+  }
+
+  /* ---------- Client e-mails ----------
+     A queue of everything sent, shown in the internal panel. The real sending lives in api/notify.js, which only
+     exists on Vercel: on any other host (or without an API key) the flow runs in demo mode and nothing leaves. */
+  const CLIENTE = { nombre: 'Gráfica Del Plata', email: 'compras@graficadelplata.example' };
+  const Notifier = (() => {
+    const cola = [], subs = [];
+    const endpoint = /\.vercel\.app$/.test(location.hostname) ? '/api/notify' : null;
+    let nextId = 1;
+    const tell = m => subs.forEach(fn => fn(m));
+
+    async function entregar(m, data) {
+      try {
+        const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const j = await r.json();
+        m.estado = r.ok ? (j.sent ? 'enviado' : 'demo') : 'error';
+      } catch { m.estado = 'error'; }
+      tell(m);
+    }
+
+    function enviar(e, motivo) {
+      const q = EQ.find(x => x.id === e.eq), steps = TYPES[e.t].steps;
+      const data = {
+        caso: e.caso, cliente: CLIENTE.nombre, equipo: q.m, pieza: e.ti, estado: steps[e.s], etapa: e.s + 1, etapas: steps.length,
+        awb: e.guia || '', transportista: e.carrier || '', eta: e.eta ? fmt(e.eta) : '', motivo,
+        seguimiento: `${location.origin}${location.pathname}?caso=${encodeURIComponent(e.caso)}`,
+      };
+      const mail = MailTemplate.build(data);
+      const m = { id: nextId++, caso: e.caso, to: CLIENTE.email, toName: CLIENTE.nombre, subject: mail.subject, html: mail.html, at: new Date().toISOString(), estado: endpoint ? 'pendiente' : 'demo' };
+      cola.unshift(m);
+      tell(m);
+      if (endpoint) entregar(m, data);
+      return m;
+    }
+    return { cola, enviar, endpoint, on: fn => subs.push(fn) };
+  })();
 
   // Tracker lookup: accepts case, order or air waybill, with any casing or spacing
   const norm = s => String(s || '').toUpperCase().replace(/^AWB/, '').replace(/[^A-Z0-9]/g, '');
@@ -187,5 +295,5 @@ window.Ricser = (() => {
   const shipmentsOf = id => EV.filter(e => e.eq === id && TYPES[e.t].v).sort((a, b) => Number(done(a)) - Number(done(b)) || b.d.localeCompare(a.d));
   const codeOf = e => e.caso || e.pedido || '';
 
-  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
+  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, ROLES, LIMITS, CLIENTE, Notifier, Uploads, checkFile, addEvidence, removeEvidence, addMessage, sendToFactory, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
 })();

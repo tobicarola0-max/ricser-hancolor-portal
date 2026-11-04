@@ -41,10 +41,12 @@
     /* Runs before the animation libraries arrive: the logo must not wait for the network to appear */
     (function () {
       var boot = document.getElementById('boot');
-      if (location.hash === '#portal') { boot.style.display = 'none'; return; }
+      if (location.hash === '#portal' || /[?&]caso=/.test(location.search)) { boot.style.display = 'none'; return; }
       // Reloading always starts from the logo, not from wherever the page was left
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       window.scrollTo(0, 0);
+      // The page behind the logo settles its fonts and sizes out of sight (js/cinema.js removes this class)
+      document.documentElement.classList.add('booting');
       window.__bootT0 = performance.now();
       var imgs = boot.querySelectorAll('img'), left = imgs.length;
       function one() { if (--left <= 0) { window.__bootT0 = performance.now(); boot.classList.add('go'); } }
@@ -252,12 +254,21 @@
       <div class="v-head"><div><p class="eyebrow">Ricser SRL · Admin</p><h2>Panel interno</h2></div><p class="v-sub">Lo que cambies acá se refleja al instante en el portal del cliente y en el rastreo. Costos, margen y notas nunca salen de esta vista.</p></div>
       <div class="kpis" id="kpis"></div>
       <div class="panel glass tw" data-lenis-prevent-horizontal><table><thead><tr><th>Cliente / equipo</th><th>Servicio</th><th>Estado (visible)</th><th>Técnico</th><th>Costo USD</th><th>Precio USD</th><th>Margen</th><th>Nota interna</th></tr></thead><tbody id="tick"></tbody></table></div>
+      <div class="panel glass" id="mailBox" tabindex="-1" role="group" aria-labelledby="mbT">
+        <div class="mb-h"><h3 id="mbT">Bandeja de mails enviados</h3><span class="pill ye" id="mbMode"></span></div>
+        <p class="sm">Cada avance de un repuesto genera un mail al cliente.</p>
+        <div class="mb-g">
+          <ul id="mbList"></ul>
+          <iframe id="mbPrev" title="Vista previa del mail seleccionado" sandbox hidden></iframe>
+        </div>
+      </div>
     </section>
 
     <!-- 3 · FÁBRICA -->
     <section id="fab" class="view" role="tabpanel" aria-labelledby="tab-fab" hidden>
       <div class="v-head"><div><p class="eyebrow">HanColor Factory</p><h2>Portal del fabricante</h2></div><p class="v-sub">Acceso limitado: solo casos de garantía. Sin datos de clientes, precios ni notas internas.</p></div>
-      <div class="panel glass tw" data-lenis-prevent-horizontal><table><thead><tr><th>Caso</th><th>Equipo</th><th>Pieza y falla</th><th>Estado del caso</th><th>Guía aérea (AWB)</th></tr></thead><tbody id="fabT"></tbody></table></div>
+      <div class="fc-head" aria-hidden="true"><span>Caso</span><span>Equipo</span><span>Pieza y falla</span><span>Estado del caso</span><span>Guía aérea (AWB)</span></div>
+      <div class="fc-list" id="fabT"></div>
     </section>
 
     <!-- 4 · BASE DE DATOS -->
@@ -295,9 +306,11 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="js/mail-template.js"></script>
 <script src="js/store.js"></script>
 <script src="js/tracker.js"></script>
 <script src="js/ficha.js"></script>
+<script src="js/fabrica.js"></script>
 <script src="js/portal.js"></script>
 <script src="js/bg.js"></script>
 <script src="js/flow.js"></script>

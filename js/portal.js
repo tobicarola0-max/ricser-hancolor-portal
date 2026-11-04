@@ -1,7 +1,7 @@
 /* Scene 5: Portal del cliente. Four functional views ported from "Portal de servicio técnico.html":
    client portal, internal panel, manufacturer portal and the data model. */
 window.Portal = (() => {
-  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
+  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, Notifier, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
   let cur = 'e1', dtype = '', toastTimer = 0;
@@ -75,7 +75,8 @@ window.Portal = (() => {
         const T = TYPES[v.t], code = codeOf(v);
         return `<li style="--c:${T.c}">
           <div class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(T.steps[v.s])}</span></div>
-          <p class="sm">${T.n} · ${fmt(v.d)}${code ? ` · <span class="case mono">${esc(code)}</span>` : ''}${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}</p>
+          <p class="sm">${T.n} · ${fmt(v.d)}${code ? ` · <span class="case mono">${esc(code)}</span>` : ''}${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}${v.carrier ? ` · ${esc(v.carrier)}` : ''}${v.eta ? ` · Llega el ${fmt(v.eta)}` : ''}</p>
+          ${v.notas ? `<p class="sm">${esc(v.notas)}</p>` : ''}
           ${tracker(v, T)}
           ${T.v && code ? `<button class="link" data-track="${esc(code)}">Ver en seguimiento</button>` : ''}
         </li>`;
@@ -159,7 +160,7 @@ window.Portal = (() => {
       return `<tr data-row="${e.id}">
         <td><b>Gráfica Del Plata</b><span class="sm">${esc(q.m)}</span></td>
         <td>${esc(e.ti)}<span class="sm">${T.n}${code ? ' · ' + esc(code) : ''}</span></td>
-        <td><select data-id="${e.id}" data-k="s" ${aria('Estado')}>${T.steps.map((s, k) => `<option value="${k}" ${k === e.s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
+        <td><select data-id="${e.id}" data-k="s" ${aria('Estado')}>${T.steps.map((s, k) => `<option value="${k}" ${k === e.s ? 'selected' : ''} ${e.fab && e.fab.estado !== 'enviado' && k > 0 ? 'disabled' : ''}>${esc(s)}</option>`).join('')}</select></td>
         <td><input data-id="${e.id}" data-k="tec" value="${esc(e.tec)}" ${aria('Técnico')}></td>
         <td><input class="num" type="number" min="0" data-id="${e.id}" data-k="cost" value="${e.cost}" ${aria('Costo en USD')}></td>
         <td><input class="num" type="number" min="0" data-id="${e.id}" data-k="price" value="${e.price}" ${aria('Precio en USD')}></td>
@@ -169,27 +170,36 @@ window.Portal = (() => {
     }).join('');
   }
 
-  /* ---------- FACTORY ---------- */
-  function renderFab() {
-    const cs = EV.filter(e => e.t === 'repuesto');
-    $('#fabT').innerHTML = cs.length ? cs.slice().reverse().map(e => {
-      const q = EQ.find(x => x.id === e.eq);
-      const awbMissing = e.s >= 3 && !e.guia;
-      return `<tr>
-        <td><b class="case mono">${esc(e.caso)}</b><span class="sm">${fmt(e.d)}</span></td>
-        <td>${esc(q.m)}<span class="sm">Serie ${esc(q.s)} · instalado ${fmt(q.inst)}</span></td>
-        <td>${esc(e.ti)}<span class="sm">${esc(e.falla || '')}</span></td>
-        <td><select data-id="${e.id}" data-k="s" aria-label="Estado del caso ${esc(e.caso)}">${TYPES.repuesto.steps.map((s, k) => `<option value="${k}" ${k === e.s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></td>
-        <td><input class="mono" data-id="${e.id}" data-k="guia" value="${esc(e.guia || '')}" placeholder="AWB 000-0000 0000" aria-label="Guía aérea del caso ${esc(e.caso)}">${awbMissing ? '<span class="sm warn">Falta la guía para este estado.</span>' : ''}</td>
-      </tr>`;
-    }).join('') : '<tr><td colspan="5">Sin casos abiertos.</td></tr>';
+  /* ---------- MAILS SENT (internal panel: the factory never sees client addresses) ---------- */
+  let mailSel = null;
+  const MAIL_STATE = { demo: 'Demo, no salió', pendiente: 'Enviando', enviado: 'Enviado', error: 'Falló' };
+
+  function renderInbox() {
+    const list = Notifier.cola, cur = list.find(m => m.id === mailSel) || list[0];
+    $('#mbMode').textContent = Notifier.endpoint ? 'Envío real' : 'Modo demo';
+    $('#mbList').innerHTML = list.length ? list.map(m => `<li><button type="button" class="mb-i" data-mail="${m.id}" aria-pressed="${m === cur}">
+        <b>${esc(m.subject)}</b>
+        <span>Para ${esc(m.toName)} · ${esc(m.to)}</span>
+        <span class="mono">${new Date(m.at).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${MAIL_STATE[m.estado]}</span>
+      </button></li>`).join('') : '<li class="mb-empty">Todavía no salió ningún mail. Avanzá la etapa de una pieza en Fábrica HanColor y el aviso aparece acá.</li>';
+    const prev = $('#mbPrev');
+    prev.hidden = !cur;
+    if (cur && prev.dataset.id !== String(cur.id)) { prev.srcdoc = cur.html; prev.dataset.id = cur.id; }
+  }
+
+  function openInbox() {
+    setView('int');
+    const box = $('#mailBox');
+    if (window.__lenis && motion()) window.__lenis.scrollTo(box, { offset: -130, duration: 1.1, force: true });
+    else box.scrollIntoView();
+    box.focus({ preventScroll: true });
   }
 
   /* ---------- DATA MODEL ---------- */
   const ER_POS = {
     usuarios_y_roles: [110, 44], clientes: [330, 44], equipos: [550, 44], eventos_servicio: [790, 44],
     casos_garantia: [130, 176], servicios_remotos: [370, 176], visitas_tecnicas: [610, 176], pedidos_insumos: [860, 176],
-    repuestos_solicitados: [130, 296],
+    repuestos_solicitados: [130, 296], notificaciones: [370, 296],
   };
   let dbFilter = 'all', dbSel = null;
 
@@ -265,7 +275,7 @@ window.Portal = (() => {
     renderEqs(); renderDet();
     // Editing a row must not rebuild the table you are typing in, or keyboard focus would be lost
     if (src !== 'int') renderInt(); else renderKpis();
-    if (src !== 'fab') renderFab();
+    if (src !== 'fab') Fabrica.render();
   }
 
   function setView(id, focus) {
@@ -299,17 +309,16 @@ window.Portal = (() => {
 
     $('#tick').addEventListener('change', e => {
       const t = e.target; if (!t.dataset.id) return;
+      const mails = Notifier.cola.length;
       const v = updateEvent(+t.dataset.id, t.dataset.k, t.value, 'int');
       const row = t.closest('tr');
       if (v && row) row.querySelector('.mg').textContent = margin(v);
-      toast('Guardado. El cliente ya ve el cambio.');
+      if (Notifier.cola.length === mails) toast('Guardado. El cliente ya ve el cambio.'); // otherwise the mail toast already said it
     });
-    $('#fabT').addEventListener('change', e => {
-      const t = e.target; if (!t.dataset.id) return;
-      updateEvent(+t.dataset.id, t.dataset.k, t.value.trim(), 'fab');
-      renderFab();
-      toast('Caso actualizado. El cliente ya ve el nuevo estado.');
-    });
+    Fabrica.init({ toast, openInbox });
+    $('#mbList').addEventListener('click', e => { const b = e.target.closest('[data-mail]'); if (b) { mailSel = Number(b.dataset.mail); renderInbox(); } });
+    Notifier.on(m => { renderInbox(); if (m.estado !== 'error') toast(`Mail enviado a ${m.toName}`); else toast(`No se pudo enviar el mail a ${m.toName}`); });
+    renderInbox();
 
     const tabs = $('.cc-tabs');
     tabs.addEventListener('click', e => { const b = e.target.closest('[role=tab]'); if (b) setView(b.dataset.v); });
