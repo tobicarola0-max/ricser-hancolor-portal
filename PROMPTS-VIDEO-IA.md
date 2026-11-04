@@ -75,7 +75,7 @@ const VIDEO_PLATES = [
 | 1,6 a 4,3 | 2. Información técnica |
 | 4,3 a 4,65 | Portal #1 |
 | 4,65 a 7,1 | 3. Institucional |
-| 7,1 a 8,6 | 4. Telemetría |
+| 7,1 a 8,6 | 4. Seguimiento |
 | 8,6 a 9,4 | Portal #2 |
 | 9,4 a 9,8 | Pantalla de entrada al Command Center |
 

@@ -13,7 +13,7 @@
   const TOTAL = 9.8;
   const LABELS = { s1: 0, s2: 2.2, s3: 4.95, s4: 7.65 };
   const P2 = 8.6; // start of portal #2
-  const NAMES = [[0, '01', 'THE AWAKENING', 's1'], [1.6, '02', 'INFORMACIÓN TÉCNICA', 's2'], [4.5, '03', 'INSTITUCIONAL', 's3'], [7.1, '04', 'TELEMETRÍA LOGÍSTICA', 's4'], [P2 + .5, '05', 'COMMAND CENTER', 'portal']];
+  const NAMES = [[0, '01', 'THE AWAKENING', 's1'], [1.6, '02', 'INFORMACIÓN TÉCNICA', 's2'], [4.5, '03', 'INSTITUCIONAL', 's3'], [7.1, '04', 'SEGUIMIENTO', 's4'], [P2 + .5, '05', 'COMMAND CENTER', 'portal']];
 
   // Shared state read by the WebGL/canvas layers and written by the timeline
   const S = { flow: .22, ring: 0, beam: 0, word: 0, drop: 0, morph: 0, blow: 0, htZoom: .55, ringY: -.36, ringX: 0, ringS: 1, mx: 0, my: 0 };
@@ -255,7 +255,7 @@
       .fromTo(S, { beam: 1 }, { beam: .75, duration: .1, immediateRender: false }, 6.95)
       .fromTo(s3, { autoAlpha: 1 }, { autoAlpha: 0, duration: .32, immediateRender: false }, 7.12);
 
-    /* ===== ESCENA 4 · TELEMETRÍA ===== */
+    /* ===== ESCENA 4 · SEGUIMIENTO ===== */
     tl.fromTo('#s4', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 7.12)
       .fromTo('.hud-c', { autoAlpha: 1 }, { autoAlpha: 0, duration: .1, immediateRender: false }, 7.1)
       .fromTo('.s4-top > *', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .2, stagger: .04, ease: 'power2.out', immediateRender: false }, 7.18)

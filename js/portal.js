@@ -77,7 +77,7 @@ window.Portal = (() => {
           <div class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(T.steps[v.s])}</span></div>
           <p class="sm">${T.n} · ${fmt(v.d)}${code ? ` · <span class="case mono">${esc(code)}</span>` : ''}${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}</p>
           ${tracker(v, T)}
-          ${T.v && code ? `<button class="link" data-track="${esc(code)}">Ver en el radar</button>` : ''}
+          ${T.v && code ? `<button class="link" data-track="${esc(code)}">Ver en seguimiento</button>` : ''}
         </li>`;
       }).join('')}</ul>
     </div>`;
