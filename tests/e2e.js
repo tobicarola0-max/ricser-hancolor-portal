@@ -35,6 +35,11 @@ async function open(browser, w, h, url = '', extra = {}) {
   await page.goto(new URL(url, BASE).href, { waitUntil: 'load' });
   return { ctx, page, errs };
 }
+const login = async (page, rol) => {
+  await page.locator('#rolBtn').click(); await page.waitForTimeout(350);
+  await page.locator('#rolSel').selectOption(rol);
+  await page.locator('#rolF button[type=submit]').click(); await page.waitForTimeout(500);
+};
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 const scrollTo = async (page, t) => {
   await page.evaluate(v => window.__lenis.scrollTo(v === 'portal' ? '#portal' : Number(v) * innerHeight, { immediate: true, force: true, offset: v === 'portal' ? -70 : 0 }), t);
@@ -66,6 +71,7 @@ async function scenes(browser, w, h) {
   ok(!/Telemetr|Command Center|COMMAND|Anatom|ANATOM|Núcleo/.test(await page.evaluate(() => document.body.textContent)), 'no quedan nombres viejos');
   await scrollTo(page, .3);
   ok(await page.locator('.hud-a').count() === 0, 'sin bloque de telemetría');
+  ok(await page.locator('#stOpen').isVisible(), 'el inicio muestra la solicitud de servicio técnico');
   const input = await page.locator('#quickIn').evaluate(el => [el.offsetHeight, getComputedStyle(el).fontSize]);
   ok(input[0] >= 48, 'campo de 48 px o más', input);
   ok(await page.locator('#quickTrk button').getAttribute('aria-label') === 'Rastrear caso', 'botón con aria-label');
@@ -132,6 +138,7 @@ async function factory(browser, w, h) {
   section(`caso en Fábrica ${w}x${h}`);
   const { ctx, page, errs } = await open(browser, w, h, 'index.html#portal');
   await page.waitForTimeout(3500);
+  await login(page, 'admin');
   await page.locator('#tab-fab').click(); await page.waitForTimeout(500);
   ok(await page.locator('#mailsBtn').isHidden(), 'en Fábrica no aparece el botón de mails');
   const card = page.locator('.fc', { hasText: 'GAR-2026-0043' }), head = card.locator('.fc-h');
@@ -141,7 +148,7 @@ async function factory(browser, w, h) {
   await page.waitForTimeout(600);
   ok(new Set(hs).size >= 3, 'la altura se anima', hs);
   ok(await head.getAttribute('aria-expanded') === 'true' && await card.getByText('Así lo ve la fábrica').isVisible(), 'abre el panel');
-  ok(!(await card.innerText()).includes('Gráfica Del Plata'), 'la fábrica no ve al cliente');
+  ok(!(await card.innerText()).includes('Gráfica Del Plata'), 'el panel no muestra al cliente');
   await card.locator('[data-stage="1"]').click({ force: true });
   ok((await card.locator('[data-err="pz"]').innerText()).includes('Primero'), 'la pieza no avanza sin enviar a fábrica');
   await card.locator('[data-send]').click();
@@ -169,21 +176,27 @@ async function factory(browser, w, h) {
   ok(last.includes('HanColor') && last.includes('Fábrica') && await card.locator('.ch-m').last().locator('time, img').count() === 2, 'autor, rol, hora y adjunto', last);
   const th = await card.locator('.ch-th').evaluate(el => [el.scrollTop + el.clientHeight, el.scrollHeight, el.getAttribute('aria-live')]);
   ok(th[0] >= th[1] - 2 && th[2] === 'polite', 'scroll al último y aria-live', th);
+  // Internal steps stay internal: the client only hears about its three stages, the guide and the date
   await card.locator('[data-stage="1"]').click(); await page.waitForTimeout(300);
-  ok(await page.locator('#toast').innerText() === 'Mail enviado a Gráfica Del Plata', 'toast del mail');
-  ok(await page.evaluate(() => Notifier.outbox.length === 1 && Ricser.outbox === Notifier.outbox), 'el mail entra en la bandeja');
+  ok(await page.evaluate(() => Notifier.outbox.length) === 0, 'una etapa interna no le manda mail al cliente');
+  ok((await page.locator('#toast').innerText()).includes('Solicitada'), 'avisa qué sigue viendo el cliente');
   await card.locator('[data-k="guia"]').fill('AWB 999-1111 2222'); await card.locator('[data-k="guia"]').blur();
   await card.locator('[data-k="carrier"]').fill('Courier demo'); await card.locator('[data-k="carrier"]').blur();
   await card.locator('[data-k="eta"]').fill('2026-12-01'); await card.locator('[data-k="eta"]').blur();
-  await card.locator('[data-stage="3"]').click(); await page.waitForTimeout(200);
-  ok(await page.evaluate(() => Notifier.outbox.length) === 4, 'guía, ETA y etapa avisan; transportista no');
+  await card.locator('[data-stage="3"]').click(); await page.waitForTimeout(300);
+  ok(await page.locator('#toast').innerText() === 'Mail enviado a Gráfica Del Plata', 'toast del mail');
+  ok(await page.evaluate(() => Notifier.outbox.length === 3 && Ricser.outbox === Notifier.outbox), 'guía, ETA y etapa visible avisan; transportista no');
+  await card.locator('[data-stage="4"]').click(); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => Notifier.outbox.length) === 3, 'En aduana sigue siendo Despachada para el cliente: sin mail');
   const cp = await page.evaluate(() => { Tracker.search('GAR-2026-0043'); return document.querySelector('#cockpit').textContent; });
-  ok(['Despachada', 'AWB 999-1111 2222', 'Courier demo'].every(x => cp.includes(x)), 'Seguimiento actualizado');
+  ok(['Despachada', 'AWB 999-1111 2222', 'Courier demo', '2 de 3'].every(x => cp.includes(x)), 'Seguimiento con tres etapas', cp.replace(/\s+/g, ' ').slice(0, 160));
+  ok(!cp.includes('En aduana') && !cp.includes('En producción'), 'Seguimiento sin etapas internas');
   // Inbox from the case, then back to where you were
   await card.locator('[data-inbox]').click(); await page.waitForTimeout(500);
   ok(await page.evaluate(() => document.querySelector('#mailDlg').matches(':modal')), 'el link abre el modal de mails');
   const html = await page.locator('#mbPrev').getAttribute('srcdoc');
-  ok(html.includes('GAR-2026-0043') && html.includes('AWB 999-1111 2222') && html.includes('?caso=GAR-2026-0043'), 'plantilla con caso, guía y link');
+  ok(html.includes('GAR-2026-0043') && html.includes('AWB 999-1111 2222') && html.includes('?caso=GAR-2026-0043') && html.includes('Despachada'), 'plantilla con caso, etapa, guía y link');
+  ok(!html.includes('En aduana') && !/garant/i.test(html), 'el mail no habla de etapas internas ni de garantía');
   await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   ok(!(await page.locator('#mailDlg').isVisible()), 'Esc cierra el modal');
   await head.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
@@ -194,18 +207,37 @@ async function factory(browser, w, h) {
 }
 
 async function client(browser, w, h) {
-  section(`reclamo en Portal del cliente ${w}x${h}`);
+  section(`vista del cliente ${w}x${h}`);
   const { ctx, page, errs } = await open(browser, w, h, 'index.html#portal');
   await page.waitForTimeout(3500);
+  // Only what the client may see
+  ok(await page.locator('.cc-tabs [role=tab]:not([hidden])').count() === 1, 'el cliente solo tiene su pestaña');
+  ok(await page.locator('#mailsBtn').isHidden(), 'el cliente no ve los mails enviados');
+  await page.locator('.eq[data-id="e3"]').click(); await page.waitForTimeout(200);
+  const scan = () => page.locator('#cli').innerText();
+  for (const id of ['e1', 'e2', 'e3']) {
+    await page.locator(`.eq[data-id="${id}"]`).click(); await page.waitForTimeout(200);
+    const t = await scan();
+    ok(!/garant/i.test(t), `sin garantía (${id})`, (t.match(/.{0,30}garant.{0,20}/i) || [])[0]);
+    ok(!/uso acumulado|\d h\b/i.test(t), `sin uso acumulado (${id})`);
+    ok(/CABEZAL/i.test(t), `muestra el cabezal (${id})`);
+    ok(/INSTALADO EL/i.test(t), `muestra la instalación (${id})`);
+  }
+  const datos = await page.locator('#misDatos').innerText();
+  ok(['Mis datos', 'Gráfica Del Plata', '223 555 0100'].every(x => datos.includes(x)), 'muestra sus datos', datos);
   await page.locator('.eq[data-id="e2"]').click(); await page.waitForTimeout(300);
+  const det = await page.locator('#det').innerText();
+  ok(/Servicios abiertos/.test(det) && /Pedidos/.test(det) && /Historial/.test(det), 'servicios abiertos, pedidos e historial');
+  ok(!/En aduana|En producción|Aprobada/.test(det), 'sin etapas internas', det.slice(0, 80));
   const row = page.locator('.case-row', { hasText: 'GAR-2026-0042' });
   ok(await row.getAttribute('aria-expanded') === 'false', 'la fila arranca cerrada');
-  ok(await page.locator('#det .case-row').count() === 1, 'solo los reclamos se despliegan');
   await row.click(); await page.waitForTimeout(600);
   const d = page.locator('#cd-5');
   ok(await row.getAttribute('aria-expanded') === 'true' && await d.isVisible(), 'abre el detalle');
+  ok((await d.locator('.pz-b b').allInnerTexts()).join() === 'Solicitada,Despachada,Reemplazada', 'tres etapas', await d.locator('.pz-b b').allInnerTexts());
+  ok((await d.locator('[aria-current="step"]').innerText()).includes('Despachada'), 'marca la etapa actual');
   const txt = await d.innerText();
-  ok(['Cabezal de impresión', 'AWB 176-4410 2290', 'Courier aéreo', 'Despachada'].every(x => txt.includes(x)), 'etapa, guía y llegada', txt.slice(0, 120));
+  ok(['Cabezal de impresión', 'AWB 176-4410 2290', 'Courier aéreo'].every(x => txt.includes(x)), 'guía y transportista');
   ok(!txt.includes('Aprobamos el reemplazo') && !txt.includes('Los otros cabezales') && !(await d.locator('[data-stage], textarea').count()), 'sin chat, observación ni edición de etapas');
   ok(await d.locator('li').first().evaluate(el => getComputedStyle(el, '::before').content) === 'none', 'las listas del detalle no heredan las viñetas del historial');
   await d.locator('[data-cup]').setInputFiles({ name: 'nota.txt', mimeType: 'text/plain', buffer: Buffer.from('hola') }); await page.waitForTimeout(150);
@@ -216,20 +248,6 @@ async function client(browser, w, h) {
     const v = await page.locator('#cd-5 .ev-view video').evaluate(async el => { await el.play(); await new Promise(r => setTimeout(r, 500)); el.pause(); return { w: el.videoWidth, t: el.currentTime }; });
     ok(v.w > 0 && v.t > 0, 'el video se reproduce', v);
   }
-  await page.locator('#tab-fab').click(); await page.waitForTimeout(400);
-  const c42 = page.locator('.fc', { hasText: 'GAR-2026-0042' });
-  await c42.locator('.fc-h').click(); await page.waitForTimeout(700);
-  ok((await c42.locator('.ev-box').innerText()).includes('Cliente'), 'la fábrica ve el video del cliente');
-  await c42.locator('[data-stage="4"]').click(); await page.waitForTimeout(250);
-  await page.locator('#tab-cli').click(); await page.waitForTimeout(400);
-  ok((await page.locator('#cd-5 .pz-tl .n').innerText()).includes('En aduana'), 'la etapa se actualiza en la vista del cliente');
-  // Modal from the bar
-  ok((await page.locator('#mailsN').innerText()) === '1', 'el botón cuenta los mails');
-  await page.locator('#mailsBtn').click(); await page.waitForTimeout(450);
-  ok(await page.evaluate(() => document.querySelector('#mailDlg').matches(':modal')) && await page.locator('#mbList .mb-i').count() === 1, 'el modal lista los mails');
-  ok(await page.locator('#mbMode').innerText() === 'Modo demo', 'modo demo');
-  await page.locator('#mbClose').click(); await page.waitForTimeout(250);
-  ok(!(await page.locator('#mailDlg').isVisible()), 'Cerrar funciona');
   // Claim dialog: Esc, Cancel, and the file travels with the case
   for (const how of ['Esc', 'Cancelar']) {
     await page.locator('.act[data-t="visita"]').click(); await page.waitForTimeout(450);
@@ -239,10 +257,105 @@ async function client(browser, w, h) {
     ok(!(await page.locator('#dlg').isVisible()), `diálogo cierra con ${how}`);
   }
   await page.locator('.act[data-t="repuesto"]').click(); await page.waitForTimeout(400);
+  ok(!/garant/i.test(await page.locator('#dlg').innerText()), 'el diálogo tampoco habla de garantía');
   await page.locator('#part').fill('Sensor de altura');
   await page.locator('#partFile').setInputFiles({ name: 'falla.png', mimeType: 'image/png', buffer: PNG });
   await page.locator('#ok').click(); await page.waitForTimeout(500);
-  ok(await page.evaluate(() => { const e = Ricser.EV.find(x => x.caso === 'GAR-2026-0044'); return e && e.fab.evidencia.length === 1 && e.fab.evidencia[0].por === 'Cliente'; }), 'la foto del reclamo queda en el caso');
+  ok(await page.evaluate(() => { const e = Ricser.EV.find(x => x.caso === 'GAR-2026-0044'); return e && e.fab.evidencia.length === 1 && e.fab.evidencia[0].por === 'Cliente'; }), 'la foto del pedido queda en el caso');
+  ok(await noOverflow(page), 'sin overflow');
+  ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
+  await ctx.close();
+}
+
+async function access(browser, w, h) {
+  section(`accesos internos ${w}x${h}`);
+  const { ctx, page, errs } = await open(browser, w, h, 'index.html#portal');
+  await page.waitForTimeout(3500);
+  const tabs = () => page.locator('.cc-tabs [role=tab]:not([hidden])').evaluateAll(l => l.map(t => t.dataset.v).join());
+  ok(await tabs() === 'cli', 'el cliente arranca sin accesos internos');
+  await login(page, 'tec');
+  ok(await tabs() === 'cli,sol,int,fab', 'técnico: solicitudes, panel y fábrica', await tabs());
+  ok(await page.locator('#sol').isVisible(), 'el técnico entra a Solicitudes');
+  ok(await page.locator('#mailsBtn').isVisible(), 'el técnico ve los mails enviados');
+  await page.locator('#tab-int').click(); await page.waitForTimeout(400);
+  ok(await page.locator('#int th', { hasText: 'Margen' }).isHidden() && await page.locator('[data-k="rev"]').isHidden(), 'el técnico no ve costos ni margen');
+  await page.locator('#tab-cli').click(); await page.waitForTimeout(400);
+  await page.locator('.eq[data-id="e2"]').click(); await page.waitForTimeout(200);
+  let t = await page.locator('#cli').innerText();
+  ok(/GARANTÍA HASTA/i.test(t) && /USO ACUMULADO/i.test(t), 'el técnico ve garantía y uso');
+  ok(/En producción|En aduana/.test(t) || await page.locator('.case-row', { hasText: 'GAR-2026-0042' }).count() === 1, 'el técnico ve el detalle completo');
+  await page.locator('[data-eqk="cabezal"]').fill('Ricoh de prueba'); await page.locator('[data-eqk="cabezal"]').blur(); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => Ricser.EQ.find(e => e.id === 'e2').cabezal) === 'Ricoh de prueba', 'el técnico edita el cabezal');
+  await page.locator('#rolBtn').click(); await page.waitForTimeout(300);
+  ok(await tabs() === 'cli' && !/USO ACUMULADO/i.test(await page.locator('#cli').innerText()), 'Salir vuelve a la vista del cliente');
+  ok((await page.locator('#det').innerText()).includes('Ricoh de prueba'), 'el cliente ve el cabezal nuevo');
+  await login(page, 'admin');
+  ok(await tabs() === 'cli,sol,int,fab,db', 'administrador: todo', await tabs());
+  await page.locator('#tab-int').click(); await page.waitForTimeout(400);
+  ok(await page.locator('#int th', { hasText: 'Margen' }).isVisible(), 'el administrador ve costos y margen');
+  await page.locator('#rolBtn').click(); await page.waitForTimeout(300);
+  await login(page, 'fab');
+  ok(await tabs() === 'fab', 'fábrica: solo su pestaña', await tabs());
+  ok(await page.locator('#mailsBtn').isHidden(), 'fábrica no ve los mails');
+  const c = page.locator('.fc', { hasText: 'GAR-2026-0042' });
+  await c.locator('.fc-h').click(); await page.waitForTimeout(700);
+  ok(await c.locator('[data-stage="4"]').isDisabled() && await c.locator('[data-k="guia"]').isDisabled(), 'fábrica no edita el seguimiento');
+  ok(await c.locator('[data-inbox]').isHidden(), 'fábrica no llega a la bandeja');
+  const ta = c.locator('.ch-f textarea');
+  await ta.fill('Consulta de fábrica.'); await ta.press('Enter'); await page.waitForTimeout(200);
+  ok((await c.locator('.ch-m').last().innerText()).includes('Fábrica'), 'fábrica escribe en el chat con su nombre');
+  ok(await noOverflow(page), 'sin overflow');
+  ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
+  await ctx.close();
+}
+
+async function service(browser, w, h) {
+  section(`solicitud de servicio técnico ${w}x${h}`);
+  const { ctx, page, errs } = await open(browser, w, h);
+  await page.waitForTimeout(5000);
+  await page.locator('#stOpen').click(); await page.waitForTimeout(450);
+  ok(await page.evaluate(() => document.querySelector('#stDlg').matches(':modal')), 'abre desde el inicio');
+  const opts = await page.locator('#stEq option').count();
+  ok(opts === await page.evaluate(() => Ricser.EQUIPOS.length) + 2, 'desplegable con todos los equipos', opts);
+  ok(await page.locator('#stName').isHidden(), 'nombre oculto hasta elegir equipo');
+  await page.locator('#stF button[type=submit]').click(); await page.waitForTimeout(100);
+  ok((await page.locator('#stErr').innerText()).includes('Elegí'), 'pide el equipo');
+  await page.locator('#stEq').selectOption('dtf-uv-60'); await page.waitForTimeout(500);
+  ok(await page.locator('#stName').isVisible() && await page.locator('#stTel').isVisible() && await page.locator('#stMsg').isVisible(), 'al elegir aparecen nombre, teléfono y problema');
+  await page.locator('#stF button[type=submit]').click(); await page.waitForTimeout(100);
+  ok((await page.locator('#stErr').innerText()).includes('nombre') && await page.locator('#stName').getAttribute('aria-invalid') === 'true', 'pide el nombre');
+  await page.locator('#stName').fill('Ana <b>Prueba</b>');
+  await page.locator('#stTel').fill('123');
+  await page.locator('#stF button[type=submit]').click(); await page.waitForTimeout(100);
+  ok((await page.locator('#stErr').innerText()).includes('teléfono'), 'valida el teléfono');
+  await page.locator('#stTel').fill('223 555 0199');
+  await page.locator('#stF button[type=submit]').click(); await page.waitForTimeout(100);
+  ok((await page.locator('#stErr').innerText()).includes('pasando'), 'pide el problema');
+  await page.locator('#stMsg').fill('No toma el film.');
+  await page.locator('#stF button[type=submit]').click(); await page.waitForTimeout(250);
+  const code = await page.locator('#stCode').innerText();
+  ok(/^ST-\d{4}-0002$/.test(code) && await page.locator('#stDone').isVisible(), 'confirma con un número', code);
+  await page.locator('#stClose').click(); await page.waitForTimeout(250);
+  ok(!(await page.locator('#stDlg').isVisible()), 'cierra');
+
+  // "The next day": a reload on this same computer
+  await page.goto(new URL('index.html#portal', BASE).href, { waitUntil: 'load' });
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(3500);
+  ok(await page.locator('#tab-sol').isHidden(), 'el cliente no ve las solicitudes');
+  await login(page, 'tec');
+  ok((await page.locator('#solN').innerText()) === '2', 'el técnico ve 2 solicitudes nuevas', await page.locator('#solN').innerText());
+  const card = page.locator('.st-card', { hasText: code });
+  const text = await card.innerText();
+  ok(['DTF UV 60 cm', 'Ana <b>Prueba</b>', '223 555 0199', 'No toma el film.'].every(x => text.includes(x)), 'la solicitud sigue ahí, con sus datos y sin HTML interpretado', text);
+  ok(await card.locator('.st-tel').getAttribute('href') === 'tel:2235550199', 'el teléfono se puede llamar');
+  await card.locator('[data-tomar]').click(); await page.waitForTimeout(300);
+  ok((await page.locator('.st-card', { hasText: code }).innerText()).match(/tomada por/i) && (await page.locator('#solN').innerText()) === '1', 'tomar la pasa a En contacto');
+  await page.locator('.st-card', { hasText: code }).locator('[data-nota]').fill('Lo llamo a las 10.');
+  await page.locator('.st-card', { hasText: code }).locator('[data-nota]').blur(); await page.waitForTimeout(150);
+  await page.locator('.st-card', { hasText: code }).locator('[data-cerrar]').click(); await page.waitForTimeout(250);
+  await page.locator('#solF [data-f="cerrada"]').click(); await page.waitForTimeout(150);
+  ok((await page.locator('.st-card', { hasText: code }).locator('[data-nota]').inputValue()) === 'Lo llamo a las 10.', 'queda resuelta con su nota');
   ok(await noOverflow(page), 'sin overflow');
   ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
   await ctx.close();
@@ -271,13 +384,18 @@ async function fallback(browser) {
     await page.locator('#carTrack').scrollIntoViewIfNeeded();
     await page.locator('.car-i').nth(2).click(); await page.waitForTimeout(300);
     ok(await page.evaluate(() => Ricser.equipoActivo().id) === await page.locator('.car-i').nth(2).getAttribute('data-id'), 'carrusel');
-    await page.locator('#tab-fab').scrollIntoViewIfNeeded();
+    await page.locator('#stOpen').click(); await page.waitForTimeout(150);
+    ok(await page.evaluate(() => document.querySelector('#stDlg').matches(':modal')), 'solicitud de servicio');
+    await page.keyboard.press('Escape');
+    await page.locator('#det .case-row').first().scrollIntoViewIfNeeded();
+    await page.locator('#det .case-row').first().click(); await page.waitForTimeout(200);
+    ok(await page.locator('#det .case-detail').first().isVisible(), 'pedido del cliente');
+    await page.locator('#rolBtn').click(); await page.waitForTimeout(100);
+    await page.locator('#rolSel').selectOption('admin');
+    await page.locator('#rolF button[type=submit]').click(); await page.waitForTimeout(100);
     await page.locator('#tab-fab').click();
     await page.locator('.fc').first().locator('.fc-h').click(); await page.waitForTimeout(200);
     ok(await page.locator('.fc').first().locator('.fc-in').isVisible(), 'caso de Fábrica');
-    await page.locator('#tab-cli').click();
-    const row = page.locator('#det .case-row').first();
-    if (await row.count()) { await row.click(); await page.waitForTimeout(200); ok(await page.locator('#det .case-detail').first().isVisible(), 'reclamo del cliente'); }
     ok(errs.length === 0, 'sin errores de script', errs);
     await ctx.close();
   }
@@ -291,6 +409,8 @@ async function fallback(browser) {
   await carousel(browser);
   for (const [w, h] of SIZES) await factory(browser, w, h);
   for (const [w, h] of SIZES) await client(browser, w, h);
+  for (const [w, h] of SIZES) await access(browser, w, h);
+  for (const [w, h] of SIZES) await service(browser, w, h);
   await fallback(browser);
   await browser.close();
   console.log(`\nTOTAL: ${pass} ok, ${fail} con falla`);
