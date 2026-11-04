@@ -61,7 +61,7 @@
   <a class="brand" href="#stage" data-go="s1" aria-label="Ricser, volver al inicio"><img src="assets/marca/ricser-logo-blanco.webp" alt="Ricser Printers &amp; Plotters" width="720" height="181"></a>
   <nav id="scenes" aria-label="Escenas">
     <a href="#stage" data-go="s1" class="on"><i>01</i><span>Awakening</span></a>
-    <a href="#stage" data-go="s2"><i>02</i><span>Anatomía</span></a>
+    <a href="#stage" data-go="s2"><i>02</i><span>Información técnica</span></a>
     <a href="#stage" data-go="s3"><i>03</i><span>Núcleo</span></a>
     <a href="#stage" data-go="s4"><i>04</i><span>Telemetría</span></a>
     <a href="#portal" data-go="portal"><i>05</i><span>Command Center</span></a>
@@ -92,7 +92,7 @@
     <h1 class="mega"><span class="m m1"><span class="mi">LA NUEVA GENERACIÓN</span></span><span class="m m2"><span class="mi">DE IMPRESIÓN UV</span></span></h1>
   </div>
 
-  <!-- Shared machine rig: scene 1 (3/4) rotates into scene 2 (front + X-ray) -->
+  <!-- Hero machine: it flies into the slot of the technical sheet (scene 2) and hands over to it -->
   <div class="layer" id="lMachine">
     <div id="rigOuter"><div id="rig">
       <div class="mview" id="v34">
@@ -105,49 +105,6 @@
         <div class="v-photo">
           <img src="assets/equipos/cama-plana-uv-2513.webp" alt="Cama plana UV 2513 de HanColor, vista tres cuartos" width="1600" height="717" fetchpriority="high">
         </div>
-      </div>
-      <div class="mview" id="vF">
-        <img class="v-glow" src="assets/equipos/dtfuv60-front-glow.webp" alt="" width="540" height="423">
-        <div class="v-photo" id="fPhoto">
-          <img src="assets/equipos/dtfuv60-front.webp" alt="Impresora HanColor DTF UV de 60 cm, vista frontal" width="1120" height="755">
-          <img class="rim" src="assets/equipos/dtfuv60-front-rim.webp" alt="" width="1120" height="755">
-        </div>
-        <div class="v-photo" id="fXray"><img src="assets/equipos/dtfuv60-front-xray.webp" alt="Vista en rayos X de la misma impresora" width="1120" height="755"></div>
-
-        <svg id="schema" viewBox="0 0 1000 674" aria-hidden="true">
-          <g class="sch">
-            <!-- carro y cabezales -->
-            <path pathLength="1" d="M90 168H910"/>
-            <path pathLength="1" d="M380 150h240v38H380z"/>
-            <path pathLength="1" d="M404 158h34v22h-34zM450 158h34v22h-34zM516 158h34v22h-34zM562 158h34v22h-34z"/>
-            <!-- bombas y mangueras de tinta -->
-            <path pathLength="1" d="M152 40a18 18 0 1 0 .01 0M196 40a18 18 0 1 0 .01 0"/>
-            <path pathLength="1" d="M152 76C152 124 300 110 404 158"/>
-            <path pathLength="1" d="M174 76C174 118 330 104 450 158"/>
-            <path pathLength="1" d="M196 76C196 112 380 100 516 158"/>
-            <!-- servo y correa -->
-            <path pathLength="1" d="M270 240a30 30 0 1 0 .01 0M270 256a14 14 0 1 0 .01 0"/>
-            <path pathLength="1" d="M270 240C420 232 610 232 742 240M270 300C420 306 610 306 742 300"/>
-            <path pathLength="1" d="M742 240a30 30 0 1 1-.01 0"/>
-            <!-- módulo UV -->
-            <path pathLength="1" d="M810 396V320C810 260 700 214 620 188"/>
-            <path pathLength="1" d="M736 396h160v76H736z"/>
-          </g>
-          <g id="nozzle"><circle cx="500" cy="165" r="9"/><circle cx="500" cy="165" r="3.200"/><path d="M500 146v10M500 174v10M481 165h10M509 165h10"/></g>
-          <g class="leaders">
-            <path class="ld" data-c="1" pathLength="1" d="M500 165L640 44H1034"/>
-            <path class="ld" data-c="2" pathLength="1" d="M174 58L120 96H-34"/>
-            <path class="ld" data-c="3" pathLength="1" d="M270 270L150 340H-34"/>
-            <path class="ld" data-c="4" pathLength="1" d="M816 434L880 372H1034"/>
-            <g class="pts">
-              <g data-c="1"><circle cx="500" cy="165" r="5"/><text x="500" y="143">1</text></g>
-              <g data-c="2"><circle cx="174" cy="58" r="5"/><text x="174" y="36">2</text></g>
-              <g data-c="3"><circle cx="270" cy="270" r="5"/><text x="270" y="248">3</text></g>
-              <g data-c="4"><circle cx="816" cy="434" r="5"/><text x="816" y="412">4</text></g>
-            </g>
-          </g>
-        </svg>
-        <div id="beam" aria-hidden="true"></div>
       </div>
     </div></div>
   </div>
@@ -167,28 +124,19 @@
     </div>
   </div>
 
-  <!-- ESCENA 2: heading + callouts -->
-  <div class="layer" id="lS2">
-    <div class="s2-head">
-      <p class="eyebrow">02 · Anatomía de precisión</p>
-      <h2>Lo que frena una planta es <em>una sola pieza.</em></h2>
+  <!-- ESCENA 2: technical sheet. Rendered from Ricser.EQUIPOS by js/ficha.js, nothing about a machine lives here -->
+  <div class="layer" id="lS2" role="group" aria-label="Información técnica">
+    <div id="s2in">
+      <div class="s2-head"><p class="eyebrow">02 · Información técnica</p></div>
+      <div class="fi-stage" id="fiStage"></div>
+      <div class="fi-info" id="fiInfo"></div>
+      <p class="sr" id="fiLive" aria-live="polite"></p>
+      <div class="fi-car" role="group" aria-label="Todos los equipos. Usá las flechas izquierda y derecha para cambiar de equipo.">
+        <button type="button" class="car-arrow" id="carPrev" aria-label="Ver equipos anteriores"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M14 8H3M7.500 3l-5 5 5 5"/></svg></button>
+        <div class="car-track" id="carTrack" data-lenis-prevent></div>
+        <button type="button" class="car-arrow" id="carNext" aria-label="Ver más equipos"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M8.500 3l5 5-5 5"/></svg></button>
+      </div>
     </div>
-    <div id="coLayer">
-      <article class="co co-r" data-c="1" style="--y:-1%"><i>01</i><h3>Cabezales de impresión</h3><p>Boquillas microscópicas. Reposición aérea desde fábrica, con guía AWB.</p></article>
-      <article class="co co-l" data-c="2" style="--y:8%"><i>02</i><h3>Bombas de tinta</h3><p>Circuito UV/DTF: presión, purga y mangueras bajo control.</p></article>
-      <article class="co co-l" data-c="3" style="--y:44%"><i>03</i><h3>Motores servo</h3><p>Avance de film y carro. De ellos depende el registro.</p></article>
-      <article class="co co-r" data-c="4" style="--y:47%"><i>04</i><h3>Módulo UV LED</h3><p>Curado en línea. Driver y lámpara con trazabilidad por serie.</p></article>
-      <article class="co co-l co-inset" data-c="5" style="--y:74%">
-        <svg viewBox="0 0 220 96" aria-hidden="true">
-          <path class="opt" d="M6 22h66v20H6zM6 32h-4"/>
-          <path class="opt-b" pathLength="1" d="M72 32h78v40h40"/>
-          <path class="opt" d="M142 24l16 16M142 64l16 16M186 62v20"/>
-          <path class="opt" d="M180 62h20M180 82h20"/>
-        </svg>
-        <i>05</i><h3>Óptica láser</h3><p>Línea de corte: tubo, espejos y lente, en un mismo circuito de repuestos.</p>
-      </article>
-    </div>
-    <p class="s2-note">Esquema ilustrativo sobre fotografía real.</p>
   </div>
 
   <!-- ESCENA 3: halftone core -->
@@ -326,6 +274,7 @@
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
 <script src="js/store.js"></script>
 <script src="js/tracker.js"></script>
+<script src="js/ficha.js"></script>
 <script src="js/portal.js"></script>
 <script src="js/bg.js"></script>
 <script src="js/flow.js"></script>

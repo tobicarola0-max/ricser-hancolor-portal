@@ -13,13 +13,14 @@
   const TOTAL = 9.8;
   const LABELS = { s1: 0, s2: 2.2, s3: 4.95, s4: 7.65 };
   const P2 = 8.6; // start of portal #2
-  const NAMES = [[0, '01', 'THE AWAKENING', 's1'], [1.6, '02', 'ANATOMÍA DE PRECISIÓN', 's2'], [4.5, '03', 'EL NÚCLEO RICSER', 's3'], [7.1, '04', 'TELEMETRÍA LOGÍSTICA', 's4'], [P2 + .5, '05', 'COMMAND CENTER', 'portal']];
+  const NAMES = [[0, '01', 'THE AWAKENING', 's1'], [1.6, '02', 'INFORMACIÓN TÉCNICA', 's2'], [4.5, '03', 'EL NÚCLEO RICSER', 's3'], [7.1, '04', 'TELEMETRÍA LOGÍSTICA', 's4'], [P2 + .5, '05', 'COMMAND CENTER', 'portal']];
 
   // Shared state read by the WebGL/canvas layers and written by the timeline
   const S = { flow: .22, ring: 0, beam: 0, word: 0, drop: 0, morph: 0, blow: 0, htZoom: .55, ringY: -.36, ringX: 0, ringS: 1, mx: 0, my: 0 };
 
   Tracker.init();
   Portal.init();
+  Ficha.init();
   $('#quickIn').addEventListener('input', () => { $('#quickMsg').textContent = ''; });
 
   // Shared by the animated site and the static fallback: a code that exists goes to the tracker, anything else stays here
@@ -61,7 +62,7 @@
   bootSequence(start);
 
   function bootSequence(cb) {
-    const imgs = $$('#stage img');
+    const imgs = $$('#lMachine img'); // only the hero: the catalogue loads lazily
     const p = { v: 0 }; let n = 0;
     const tick = () => {
       n++;
@@ -160,32 +161,26 @@
   /* ---------- Master timeline ---------- */
   function buildTimeline(isMob) {
     const stage = $('#stage'), rigOuter = $('#rigOuter');
-    const heroScale = 1;
     // Light pool centered on the base of the machine
-    S.ringY = isMob ? -.12 : -.31; S.ringS = isMob ? .6 : 1;
-    const heroX = () => 0;
-    const heroRingX = () => 0;
-    S.ringX = 0;
+    const restRingY = isMob ? -.12 : -.31;
+    S.ringY = restRingY; S.ringS = isMob ? .6 : 1; S.ringX = 0;
 
     // Initial state
     gsap.set('#v34', { rotationY: 5, autoAlpha: 1, transformOrigin: '50% 60%' });
-    gsap.set('#vF', { autoAlpha: 0, rotationY: 34, transformOrigin: '50% 60%' });
-    gsap.set('#rig', { scale: heroScale, x: heroX(), y: 0, transformOrigin: '50% 72%' });
-    gsap.set('#lS2, .s2-head, .s2-note, .co, .pts > g, .leaders', { autoAlpha: 0 });
+    gsap.set('#rig', { scale: 1, x: 0, y: 0, transformOrigin: '50% 50%' });
+    gsap.set('#lS2, .s2-head, .fi-info, .fi-car, #fiStage', { autoAlpha: 0 });
     gsap.set('#s3, #s4, #s5, #routes, .cap', { autoAlpha: 0 });
-    gsap.set('#nozzle', { opacity: 0 });
-    gsap.set('.sch path, .ld, .opt-b', { strokeDasharray: 1, strokeDashoffset: 1 });
     S.morph = 0; S.blow = 0; S.word = 0;
 
-    const scan = { p: 0 }, fX = $('#fXray'), fP = $('#fPhoto'), beam = $('#beam');
-    const applyScan = () => {
-      const p = scan.p * 100;
-      fX.style.clipPath = `inset(0 0 ${100 - p}% 0)`;
-      fP.style.clipPath = `inset(${p}% 0 0 0)`;
-      beam.style.top = p + '%';
-      beam.style.opacity = scan.p > .001 && scan.p < .999 ? 1 : 0;
+    // Where the hero lands: the image slot of the technical sheet, from layout values so transforms never affect it
+    const HERO_R = 1600 / 717, fiStage = $('#fiStage');
+    const slot = () => {
+      let x = 0, y = 0, el = fiStage;
+      while (el && el !== stage) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+      const w = fiStage.offsetWidth, h = fiStage.offsetHeight, fit = Math.min(w * .96, h * .74 * HERO_R);
+      return { cx: x + w / 2, cy: y + h / 2, w: fit, h: fit / HERO_R };
     };
-    applyScan();
+    const rigCx = () => rigOuter.offsetLeft + rigOuter.offsetWidth / 2, rigCy = () => rigOuter.offsetTop + rigOuter.offsetHeight / 2;
 
     const ir1 = { r: 0 }, ir2 = { r: 0 };
     let a2 = { x: innerWidth / 2, y: innerHeight / 2 };
@@ -199,10 +194,6 @@
     const s3 = $('#s3'), s5 = $('#s5');
     applyIris(s3, 0, 0, 0); applyIris(s5, 0, 0, 0);
 
-    // Anchor of the printhead in layout coordinates: the zoom has to land exactly on it
-    const nozzleY = .245;
-    const anchorOffsetY = () => stage.offsetHeight / 2 - (rigOuter.offsetTop + rigOuter.offsetHeight * nozzleY);
-
     tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
 
     /* ===== ESCENA 1 · THE AWAKENING ===== */
@@ -214,55 +205,38 @@
       .fromTo(S, { flow: 1 }, { flow: .3, duration: .6, ease: 'power2.out', immediateRender: false }, .85)
       .fromTo(S, { word: 0 }, { word: 1, duration: .5, ease: 'power2.out', immediateRender: false }, .22)
       .fromTo(S, { word: 1 }, { word: 2, duration: .45, ease: 'power2.in', immediateRender: false }, .9)
-      .fromTo('#rig', { scale: heroScale, x: heroX, y: 0 }, { scale: heroScale * 1.06, x: heroX, y: 0, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
-      .fromTo('#v34', { rotationY: 5 }, { rotationY: -5, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
+      .fromTo('#rig', { scale: 1, x: 0, y: 0 }, { scale: 1.06, x: 0, y: 0, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
+      .fromTo('#v34', { rotationY: 5 }, { rotationY: -3, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
       .fromTo('.hud-b', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 1.2);
 
-    // Rotation: the 3/4 photo turns toward the viewer and hands over to the front photo of the same model
-    tl.fromTo('#v34', { rotationY: -5 }, { rotationY: -36, duration: .5, ease: 'power2.in', immediateRender: false }, 1.1)
-      .fromTo('#v34', { autoAlpha: 1 }, { autoAlpha: 0, duration: .16, ease: 'power1.in', immediateRender: false }, 1.42)
-      .fromTo('#vF', { autoAlpha: 0 }, { autoAlpha: 1, duration: .16, ease: 'power1.out', immediateRender: false }, 1.36)
-      .fromTo('#vF', { rotationY: 34 }, { rotationY: 0, duration: .36, ease: 'power2.out', immediateRender: false }, 1.36)
-      .fromTo('#rig', { scale: heroScale * 1.06, x: heroX, y: 0 }, { scale: 1, x: 0, y: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
-      .fromTo(S, { ringX: heroRingX }, { ringX: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
+    // Hand-over: the hero flies into the slot of the technical sheet and becomes its first image
+    tl.fromTo('#v34', { rotationY: -3 }, { rotationY: 0, duration: .55, ease: 'power2.inOut', immediateRender: false }, 1.1)
+      .fromTo('#rig', { scale: 1.06, x: 0, y: 0 }, { scale: () => slot().w / rigOuter.offsetWidth, x: () => slot().cx - rigCx(), y: () => slot().cy - rigCy(), duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
+      .fromTo('.v-reflect', { opacity: .32 }, { opacity: 0, duration: .25, immediateRender: false }, 1.15)
+      .fromTo(S, { ringX: 0, ringY: restRingY }, { ringX: () => (slot().cx - innerWidth / 2) / (stage.offsetHeight || innerHeight), ringY: () => (stage.offsetHeight / 2 - slot().cy - slot().h / 2) / (stage.offsetHeight || innerHeight), duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
       .fromTo(S, { ring: 1 }, { ring: .55, duration: .5, immediateRender: false }, 1.2);
 
-    /* ===== ESCENA 2 · ANATOMÍA + RAYOS X ===== */
-    tl.fromTo('#lS2', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 1.7)
-      .fromTo('.s2-head', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power2.out', immediateRender: false }, 1.72)
-      .fromTo('.mm-grid', { opacity: .5 }, { opacity: .9, duration: .4, immediateRender: false }, 1.8)
-      .fromTo(scan, { p: 0 }, { p: 1, duration: .85, ease: 'power1.inOut', immediateRender: false, onUpdate: applyScan }, 1.95)
-      .fromTo('#fPhoto', { autoAlpha: 1 }, { autoAlpha: 0, duration: .01, immediateRender: false }, 2.82)
-      .fromTo('.sch path', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .32, stagger: .05, ease: 'power1.inOut', immediateRender: false }, 2.2)
-      .fromTo('.leaders', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 2.7)
-      .fromTo('.s2-note', { autoAlpha: 0 }, { autoAlpha: 1, duration: .1, immediateRender: false }, 2.8);
+    /* ===== ESCENA 2 · INFORMACIÓN TÉCNICA ===== */
+    tl.fromTo('#lS2', { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 1.62)
+      .fromTo('#fiStage', { autoAlpha: 0 }, { autoAlpha: 1, duration: .08, immediateRender: false }, 1.64)
+      .fromTo('#lMachine', { autoAlpha: 1 }, { autoAlpha: 0, duration: .06, immediateRender: false }, 1.7)
+      .fromTo('.hud-c', { autoAlpha: 1 }, { autoAlpha: 0, duration: .1, immediateRender: false }, 1.6)
+      .fromTo('.mm-grid', { opacity: .5 }, { opacity: .8, duration: .4, immediateRender: false }, 1.8)
+      .fromTo('.s2-head, .fi-info', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .2, stagger: .03, ease: 'power2.out', immediateRender: false }, 1.7)
+      .fromTo('.fi-car', { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power2.out', immediateRender: false }, 1.76);
 
-    [1, 2, 3, 4, 5].forEach((c, k) => {
-      const at = 2.78 + k * .21;
-      const co = `.co[data-c="${c}"]`, side = $(co).classList.contains('co-l') ? -20 : 20;
-      if (c < 5) {
-        tl.fromTo(`.ld[data-c="${c}"]`, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .15, ease: 'power1.out', immediateRender: false }, at);
-        tl.fromTo(`.pts > [data-c="${c}"]`, { autoAlpha: 0 }, { autoAlpha: 1, duration: .05, immediateRender: false }, at);
-      } else tl.fromTo('.opt-b', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .2, immediateRender: false }, at + .05);
-      tl.fromTo(co, { autoAlpha: 0, x: isMob ? 0 : side, y: isMob ? 14 : 0 }, { autoAlpha: 1, x: 0, y: 0, duration: .13, ease: 'power2.out', immediateRender: false }, at + .06);
-      if (isMob && c < 5) tl.to(co, { autoAlpha: 0, y: -10, duration: .05 }, at + .19);
-    });
-
-    /* ===== PORTAL #1 · into the printhead nozzle =====
+    /* ===== PORTAL #1 · into the machine on the sheet =====
        Scrolling back, this layer is painted again at whatever zoom it has at that moment, and the browser keeps
        that resolution. So the zoom stays moderate and the layer is hidden as soon as the iris covers the screen
        (t = 4.64): above that point it would only cost memory and freeze the page on the way up. */
-    tl.to('.co, .pts, .ld, .s2-head, .s2-note', { autoAlpha: 0, duration: .12 }, 3.92)
-      .fromTo('.sch', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 3.96)
-      .fromTo('#vF .v-glow', { autoAlpha: .75 }, { autoAlpha: 0, duration: .15, immediateRender: false }, 3.95)
-      .fromTo('#nozzle', { opacity: 0 }, { opacity: 1, duration: .1, immediateRender: false }, 3.95)
-      .set('#rig', { transformOrigin: `50% ${nozzleY * 100}%` }, 3.92)
-      .fromTo('#rig', { scale: 1, x: 0, y: 0 }, { scale: isMob ? 20 : 16, x: 0, y: anchorOffsetY, duration: .82, ease: 'power3.in', immediateRender: false }, 3.95)
+    tl.to('.s2-head, .fi-info, .fi-car', { autoAlpha: 0, duration: .12 }, 3.92)
+      .fromTo(fiStage, { scale: 1, x: 0, y: 0 }, { scale: isMob ? 9 : 7, x: () => stage.offsetWidth / 2 - slot().cx, y: () => stage.offsetHeight / 2 - slot().cy, duration: .82, ease: 'power3.in', immediateRender: false }, 3.95)
       .fromTo(S, { ring: .55, flow: .3 }, { ring: 0, flow: 0, duration: .35, immediateRender: false }, 3.95)
       .fromTo(s3, { autoAlpha: 0 }, { autoAlpha: 1, duration: .01, immediateRender: false }, 4.3)
       .fromTo(ir1, { r: 0 }, { r: 1, duration: .46, ease: 'power2.in', immediateRender: false, onUpdate: () => applyIris(s3, ir1.r, innerWidth / 2, stage.offsetHeight / 2) }, 4.3)
       .fromTo(S, { htZoom: .55 }, { htZoom: 1, duration: .62, ease: 'power2.out', immediateRender: false }, 4.3)
-      .fromTo('#lMachine, #lS2, #flowFront, #flowBack', { autoAlpha: 1 }, { autoAlpha: 0, duration: .01, immediateRender: false }, 4.64);
+      .fromTo('#lS2, #flowFront, #flowBack', { autoAlpha: 1 }, { autoAlpha: 0, duration: .01, immediateRender: false }, 4.64)
+      .fromTo('.hud-c', { autoAlpha: 0 }, { autoAlpha: 1, duration: .1, immediateRender: false }, 4.7);
 
     /* ===== ESCENA 3 · NÚCLEO HALFTONE ===== */
     const capIO = (id, a, b) => {
@@ -333,8 +307,8 @@
       invalidateOnRefresh: true,
     });
 
-    const s4El = $('#s4'), rigEl = $('#rig'), topEl = $('#top'), routes = $('#routes');
-    let routesOn = true;
+    const s4El = $('#s4'), topEl = $('#top'), lS2 = $('#lS2'), routes = $('#routes');
+    let routesOn = true, fiOn = false;
     tl.eventCallback('onUpdate', () => {
       const t = tl.time();
       if (t < 7.05 || t > 8.45) played = false;
@@ -343,7 +317,10 @@
       // Scene 4 has its own search field and the portal its own bar: the quick tracker steps aside for both
       topEl.classList.toggle('trk-off', t > 7.05);
       // Dedicated GPU layer only during each zoom: leaving the band resets the resolution of that layer
-      rigEl.classList.toggle('zoom', t > 3.9 && t < 4.66);
+      fiStage.classList.toggle('zoom', t > 3.9 && t < 4.66);
+      // The sheet is interactive only while it holds still; its callouts draw again on every arrival
+      const fiLive = t > 1.74 && t < 3.92;
+      if (fiLive !== fiOn) { fiOn = fiLive; lS2.classList.toggle('live', fiLive); if (fiLive) Ficha.enter(); else Ficha.leave(); }
       s4in.classList.toggle('zoom', t >= P2 && t < P2 + .66);
       const showRoutes = t > 6.4 && t < 7.1;
       if (showRoutes !== routesOn) {
@@ -357,7 +334,7 @@
     routes.pauseAnimations?.(); routesOn = false;
     updateHud(0);
 
-    return () => { gsap.set(s4in, { clearProps: 'all' }); Tracker.onRender(null); measureA2 = null; tl = null; st = null; };
+    return () => { gsap.set(s4in, { clearProps: 'all' }); gsap.set(fiStage, { clearProps: 'all' }); lS2.classList.remove('live'); Ficha.leave(); Tracker.onRender(null); measureA2 = null; tl = null; st = null; };
   }
 
   /* ---------- Per-frame drawing, only for the layers on screen ---------- */
@@ -458,6 +435,7 @@
     if (!Halftone.init($('#halftone'))) html.classList.add('no-webgl');
     else Halftone.draw(S, 0, 3);
     Tracker.search('GAR-2026-0042');
+    Ficha.enter();
     const map = { s1: '#stage', s2: '#lS2', s3: '#s3', s4: '#s4', portal: '#portal' };
     window.Cinema = { go: n => $(map[n]).scrollIntoView() };
     document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); window.Cinema.go(a.dataset.go); } });

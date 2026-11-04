@@ -29,6 +29,89 @@ window.Ricser = (() => {
     { id: 'e3', m: 'Cortadora láser 1,60 × 2,50', s: 'CL16-23-0098', inst: '2023-08-02', gar: '2025-08-02', h: 5210, img: 'assets/equipos/eq-cortadora-laser.webp', iw: 640, ih: 602 },
   ];
 
+  /* ---------- Equipment catalogue: the only source for the technical sheet, the carousel and the footer ---------- */
+  const AE = 'assets/equipos/', AM = 'assets/materiales/';
+  const im = (f, w, h, label, vista) => ({ src: AE + f, w, h, label, vista });
+  const PEND = 'TODO: confirmar con Ricser'; // no invented specs: fill specs[], callouts[] and materiales[] when Ricser confirms them
+  const eqp = (id, nombre, modelo, tw, th, imagenes, extra) => Object.assign({ id, nombre, modelo, thumb: { src: `${AE}thumbs/${id}.webp`, w: tw, h: th }, imagenes, specs: [], callouts: [], materiales: [], pendiente: PEND }, extra);
+  const vistas = (id, list) => list.map((d, i) => im(i ? `${id}-${i + 1}.webp` : `${id}.webp`, d[0], d[1], `Vista ${i + 1}`));
+
+  const EQUIPOS = [
+    eqp('cama-plana-uv-2513', 'Cama plana UV', '2513', 320, 143, [
+      im('cama-plana-uv-2513.webp', 1600, 717, 'Vista 3/4', 'callouts'),
+      im('cama-plana-uv-2513-frente.webp', 1600, 554, 'Frente'),
+      im('cama-plana-uv-2513.webp', 1600, 717, 'Medidas', 'cotas'),
+    ], {
+      marca: 'HanColor',
+      pendiente: null,
+      specs: [
+        { k: 'Medidas', v: '4535 × 2175 × 1600 mm' },
+        { k: 'Cabezales', v: '4 Ricoh 6ta generación' },
+        { k: 'Altura máxima de impresión', v: '15 cm' },
+        { k: 'Succión', v: 'Cinco áreas independientes' },
+        { k: 'Sistema', v: 'Levitación magnética + rejilla metálica' },
+      ],
+      // a = point on the photo, l = where the label goes, both in % of the image; pos = side the text grows towards
+      callouts: [
+        { t: 'Levitación magnética + rejilla metálica', a: [22, 10], l: [32, -8] },
+        { t: 'Cinco áreas de succión independientes', a: [66, 41], l: [71, 7] },
+        { t: '4 cabezales Ricoh 6ta generación', a: [14, 37], l: [14, 60], pos: 'abajo' },
+        { t: 'Altura máxima de impresión 15 cm', a: [78, 47], l: [80, 96] },
+      ],
+      cotas: [
+        { t: '4535 mm', de: [3, -8], a: [97, -8], lado: -1 },
+        { t: '1600 mm', de: [-3, 2], a: [-3, 97], lado: -1 },
+        { t: '2175 mm', de: [21, 80], a: [43, 100], lado: 1 },
+      ],
+      materiales: [
+        { n: 'Cuero', img: `${AM}cuero.webp` },
+        { n: 'Cerámica', img: `${AM}ceramica.webp` },
+        { n: 'PVC símil mármol', img: `${AM}pvc-marmol.webp` },
+        { n: 'Metal para señalización', img: `${AM}metal.webp` },
+        { n: 'Acrílico', img: `${AM}acrilico.webp` },
+        { n: 'Vidrio', img: `${AM}vidrio.webp` },
+        { n: 'Madera / MDF', img: `${AM}madera-mdf.webp` },
+      ],
+    }),
+    eqp('cama-plana-uv-6090', 'Cama plana UV', '6090', 320, 223, vistas('cama-plana-uv-6090', [[924, 644]])),
+    eqp('a3-uv', 'Impresora UV', 'A3', 320, 300, vistas('a3-uv', [[811, 760]])),
+    eqp('dtf-uv-60', 'DTF UV', '60 cm', 320, 283, vistas('dtf-uv-60', [[1464, 1293], [1132, 767]])),
+    eqp('dtf-uv-30', 'DTF UV', '30 cm', 320, 306, vistas('dtf-uv-30', [[1367, 1307], [776, 696]])),
+    eqp('dtf-textil-6', 'DTF Textil', '6 cabezales', 320, 204, vistas('dtf-textil-6', [[1600, 1018], [1600, 970]])),
+    eqp('dtf-textil-4', 'DTF Textil', '4 cabezales', 320, 269, vistas('dtf-textil-4', [[1581, 1328]])),
+    eqp('dtf-h3070-4', 'DTF', 'H3070-4', 320, 238, vistas('dtf-h3070-4', [[1600, 1192]])),
+    eqp('dtg-1-estacion', 'DTG', '1 estación', 320, 246, vistas('dtg-1-estacion', [[1590, 1221]])),
+    eqp('dtg-2-estaciones', 'DTG', '2 estaciones', 320, 190, vistas('dtg-2-estaciones', [[1534, 909]])),
+    eqp('dtg', 'DTG', 'Modelo a confirmar', 320, 158, vistas('dtg', [[1600, 792]])), // TODO: confirmar con Ricser qué modelo es esta foto
+    eqp('hibrida-uv', 'Híbrida UV', 'Hybrid', 320, 116, vistas('hibrida-uv', [[1600, 581]])),
+    eqp('plotter-uv', 'Plotter UV', 'Rollo', 320, 134, vistas('plotter-uv', [[1600, 669], [1600, 558], [979, 449]])),
+    eqp('plotter-uv-32', 'Plotter UV', '3,2 m', 320, 111, vistas('plotter-uv-32', [[1600, 557]])),
+    eqp('plotter-1-cabezal', 'Plotter', '1 cabezal', 320, 236, vistas('plotter-1-cabezal', [[1600, 1182]])),
+    eqp('plotter-2-cabezales', 'Plotter', '2 cabezales', 320, 294, vistas('plotter-2-cabezales', [[1489, 1367]])),
+    eqp('plotter-8-cabezales', 'Plotter', '8 cabezales', 320, 147, vistas('plotter-8-cabezales', [[1600, 737]])),
+    eqp('plotter-subli-4', 'Plotter de sublimación', '4 cabezales', 320, 145, vistas('plotter-subli-4', [[1600, 726]])),
+    eqp('plotter-corte', 'Plotter de corte', 'Skycut', 320, 238, vistas('plotter-corte', [[1600, 1188], [1600, 910], [1600, 1096]]), { marca: 'Skycut' }),
+    eqp('cortadora-laser', 'Cortadora láser', '1,60 × 2,50', 320, 302, vistas('cortadora-laser', [[433, 408]])),
+    eqp('cortadoras-skycut', 'Cortadoras', 'Skycut', 295, 320, vistas('cortadoras-skycut', [[1223, 1326], [1069, 1159], [856, 1191], [1271, 1298]]), { marca: 'Skycut' }),
+    eqp('mesa-corte-1625', 'Mesa de corte', '1625', 320, 144, vistas('mesa-corte-1625', [[1600, 722]])),
+    eqp('mesa-corte-6090', 'Mesa de corte', '6090', 320, 269, vistas('mesa-corte-6090', [[1542, 1297]])),
+    eqp('mesa-corte-1x070', 'Mesa de corte', '1 × 0,70', 291, 320, vistas('mesa-corte-1x070', [[617, 679]])),
+    eqp('mesas-corte-skycut', 'Mesas de corte', 'Skycut', 320, 230, vistas('mesas-corte-skycut', [[1600, 1148], [1600, 932]]), { marca: 'Skycut' }),
+    eqp('calandra-1726', 'Calandra', '1726', 320, 249, vistas('calandra-1726', [[1600, 1244]])),
+    eqp('plancha-doble-neumatica', 'Plancha doble', 'Neumática', 320, 168, vistas('plancha-doble-neumatica', [[1600, 842], [1290, 1331], [1600, 1276]])),
+  ];
+
+  // Active machine, shared with the rest of the site through onEquipo()
+  let activoId = EQUIPOS[0].id;
+  const equipoSubs = [];
+  const equipoActivo = () => EQUIPOS.find(e => e.id === activoId);
+  const onEquipo = fn => equipoSubs.push(fn);
+  function setEquipoActivo(id, opts) {
+    if (id === activoId || !EQUIPOS.some(e => e.id === id)) return;
+    activoId = id;
+    equipoSubs.forEach(fn => fn(equipoActivo(), opts));
+  }
+
   const EV = [
     { id: 1, eq: 'e1', t: 'instalacion', ti: 'Instalación y puesta en marcha', d: '2025-03-14', s: 0, tec: 'M. Rossi', cost: 180, price: 0, note: 'Cliente pidió reforzar la capacitación inicial.' },
     { id: 2, eq: 'e1', t: 'visita', ti: 'Mantenimiento preventivo', d: '2025-11-05', s: 3, tec: 'M. Rossi', cost: 140, price: 260, note: 'Cabezal 2 con desgaste, ofrecer repuesto en la próxima visita.' },
@@ -104,5 +187,5 @@ window.Ricser = (() => {
   const shipmentsOf = id => EV.filter(e => e.eq === id && TYPES[e.t].v).sort((a, b) => Number(done(a)) - Number(done(b)) || b.d.localeCompare(a.d));
   const codeOf = e => e.caso || e.pedido || '';
 
-  return { TG, ICON, TYPES, REM, EQ, EV, DB, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
+  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
 })();

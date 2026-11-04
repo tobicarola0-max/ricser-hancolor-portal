@@ -1,7 +1,7 @@
 /* Scene 5: Command Center. Four functional views ported from "Portal de servicio técnico.html":
    client portal, internal panel, manufacturer portal and the data model. */
 window.Portal = (() => {
-  const { TG, ICON, TYPES, REM, EQ, EV, DB, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
+  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
   let cur = 'e1', dtype = '', toastTimer = 0;
@@ -255,8 +255,8 @@ window.Portal = (() => {
   function renderDb() { renderFilter(); renderEr(); renderTables(); }
 
   function fleet() {
-    const items = [['plotter-8-cabezales', 'Plotter 8 cabezales'], ['dtg', 'DTG'], ['uv-hybrid', 'UV Hybrid'], ['dtf-uv-30', 'DTF UV 30'], ['plotter-2-cabezales', 'Plotter 2 cabezales'], ['dtf-h3070', 'DTF H3070'], ['a3-uv', 'A3 UV'], ['plotter-uv-32', 'Plotter UV 3,2 m']];
-    const one = items.map(i => `<figure><img src="assets/equipos/fleet-${i[0]}.webp" alt="" loading="lazy"><figcaption class="mono">${i[1]}</figcaption></figure>`).join('');
+    const one = EQUIPOS.map(e => `<figure><img src="${e.thumb.src}" alt="" width="${e.thumb.w}" height="${e.thumb.h}" loading="lazy" decoding="async"><figcaption class="mono">${esc([e.nombre, e.modelo].filter(Boolean).join(' '))}</figcaption></figure>`).join('');
+    $('#fleet').style.animationDuration = `${EQUIPOS.length * 7.5}s`; // same speed whatever the size of the catalogue
     $('#fleet').innerHTML = one + one;
   }
 
