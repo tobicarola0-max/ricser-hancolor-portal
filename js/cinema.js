@@ -160,14 +160,15 @@
   /* ---------- Master timeline ---------- */
   function buildTimeline(isMob) {
     const stage = $('#stage'), rigOuter = $('#rigOuter');
-    const heroScale = isMob ? 1.3 : 1.12;
-    S.ringY = isMob ? -.2 : -.36; S.ringS = isMob ? .6 : 1;
-    const heroX = () => isMob ? 0 : innerWidth * .085; // leaves "CUT" clear of the machine
-    const heroRingX = () => heroX() / (stage.offsetHeight || innerHeight);
-    S.ringX = heroRingX();
+    const heroScale = 1;
+    // Light pool centered on the base of the machine
+    S.ringY = isMob ? -.12 : -.31; S.ringS = isMob ? .6 : 1;
+    const heroX = () => 0;
+    const heroRingX = () => 0;
+    S.ringX = 0;
 
     // Initial state
-    gsap.set('#v34', { rotationY: 7, autoAlpha: 1, transformOrigin: '50% 60%' });
+    gsap.set('#v34', { rotationY: 5, autoAlpha: 1, transformOrigin: '50% 60%' });
     gsap.set('#vF', { autoAlpha: 0, rotationY: 34, transformOrigin: '50% 60%' });
     gsap.set('#rig', { scale: heroScale, x: heroX(), y: 0, transformOrigin: '50% 72%' });
     gsap.set('#lS2, .s2-head, .s2-note, .co, .pts > g, .leaders', { autoAlpha: 0 });
@@ -213,8 +214,8 @@
       .fromTo(S, { flow: 1 }, { flow: .3, duration: .6, ease: 'power2.out', immediateRender: false }, .85)
       .fromTo(S, { word: 0 }, { word: 1, duration: .5, ease: 'power2.out', immediateRender: false }, .22)
       .fromTo(S, { word: 1 }, { word: 2, duration: .45, ease: 'power2.in', immediateRender: false }, .9)
-      .fromTo('#rig', { scale: heroScale, x: heroX, y: 0 }, { scale: heroScale * 1.1, x: heroX, y: 0, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
-      .fromTo('#v34', { rotationY: 7 }, { rotationY: -5, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
+      .fromTo('#rig', { scale: heroScale, x: heroX, y: 0 }, { scale: heroScale * 1.06, x: heroX, y: 0, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
+      .fromTo('#v34', { rotationY: 5 }, { rotationY: -5, duration: 1.1, ease: 'power1.inOut', immediateRender: false }, 0)
       .fromTo('.hud-b', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, immediateRender: false }, 1.2);
 
     // Rotation: the 3/4 photo turns toward the viewer and hands over to the front photo of the same model
@@ -222,7 +223,7 @@
       .fromTo('#v34', { autoAlpha: 1 }, { autoAlpha: 0, duration: .16, ease: 'power1.in', immediateRender: false }, 1.42)
       .fromTo('#vF', { autoAlpha: 0 }, { autoAlpha: 1, duration: .16, ease: 'power1.out', immediateRender: false }, 1.36)
       .fromTo('#vF', { rotationY: 34 }, { rotationY: 0, duration: .36, ease: 'power2.out', immediateRender: false }, 1.36)
-      .fromTo('#rig', { scale: heroScale * 1.1, x: heroX, y: 0 }, { scale: 1, x: 0, y: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
+      .fromTo('#rig', { scale: heroScale * 1.06, x: heroX, y: 0 }, { scale: 1, x: 0, y: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
       .fromTo(S, { ringX: heroRingX }, { ringX: 0, duration: .6, ease: 'power2.inOut', immediateRender: false }, 1.1)
       .fromTo(S, { ring: 1 }, { ring: .55, duration: .5, immediateRender: false }, 1.2);
 
@@ -416,13 +417,17 @@
     const cur = $('#cursor');
     const qx = gsap.quickTo(cur, 'x', { duration: .28, ease: 'power3' }), qy = gsap.quickTo(cur, 'y', { duration: .28, ease: 'power3' });
     const ry = gsap.quickTo('#rigOuter', 'rotationY', { duration: .9, ease: 'power2' }), rx = gsap.quickTo('#rigOuter', 'rotationX', { duration: .9, ease: 'power2' });
+    // Soft parallax: the machine and the title drift in opposite directions, so the title reads as further back
+    const mx = gsap.quickTo('#rigOuter', 'x', { duration: 1.1, ease: 'power2' });
+    const titles = $$('.mega').map(el => [gsap.quickTo(el, 'x', { duration: 1.3, ease: 'power2' }), gsap.quickTo(el, 'y', { duration: 1.3, ease: 'power2' })]);
     const xy = $('#hudXY');
     cur.classList.add('on');
     window.addEventListener('pointermove', e => {
       qx(e.clientX); qy(e.clientY);
       const nx = e.clientX / innerWidth - .5, ny = e.clientY / innerHeight - .5;
       S.mx = nx * 2; S.my = -ny * 2;
-      ry(nx * 5); rx(-ny * 3);
+      ry(nx * 4); rx(-ny * 2); mx(nx * 16);
+      titles.forEach(q => { q[0](-nx * 14); q[1](-ny * 8); });
       xy.textContent = `${String(Math.round(e.clientX)).padStart(4, '0')} · ${String(Math.round(e.clientY)).padStart(4, '0')}`;
       cur.classList.toggle('hot', !!e.target.closest?.('a,button,input,select,textarea,label,[role=button]'));
     }, { passive: true });

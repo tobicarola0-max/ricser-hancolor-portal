@@ -17,6 +17,7 @@
 <link rel="preload" as="image" href="assets/marca/logo-b.webp">
 <link rel="preload" as="image" href="assets/marca/logo-word.webp">
 <link rel="preload" as="image" href="assets/marca/logo-sub.webp">
+<link rel="preload" as="image" href="assets/equipos/cama-plana-uv-2513.webp">
 </head>
 <body>
 
@@ -88,17 +89,21 @@
 
   <!-- ESCENA 1: title plane, behind the machine -->
   <div class="layer" id="lTitle">
-    <h1 class="mega"><span class="m m1"><span class="mi">CUT THE</span></span><span class="m m2"><span class="mi">DOWNTIME</span></span></h1>
+    <h1 class="mega"><span class="m m1"><span class="mi">LA NUEVA GENERACIÓN</span></span><span class="m m2"><span class="mi">DE IMPRESIÓN UV</span></span></h1>
   </div>
 
   <!-- Shared machine rig: scene 1 (3/4) rotates into scene 2 (front + X-ray) -->
   <div class="layer" id="lMachine">
     <div id="rigOuter"><div id="rig">
       <div class="mview" id="v34">
-        <img class="v-glow" src="assets/equipos/dtfuv60-34-glow.webp" alt="" width="540" height="498">
+        <i class="v-glow" aria-hidden="true"></i>
+        <!-- Floor reflection: each visible face of the machine is mirrored across its own base line -->
+        <div class="v-reflect" aria-hidden="true">
+          <img class="rf-l" src="assets/equipos/cama-plana-uv-2513.webp" alt="" width="1600" height="717">
+          <img class="rf-r" src="assets/equipos/cama-plana-uv-2513.webp" alt="" width="1600" height="717">
+        </div>
         <div class="v-photo">
-          <img src="assets/equipos/dtfuv60-34.webp" alt="Impresora HanColor DTF UV de 60 cm, vista tres cuartos" width="1452" height="1281">
-          <img class="rim" src="assets/equipos/dtfuv60-34-rim.webp" alt="" width="1452" height="1281">
+          <img src="assets/equipos/cama-plana-uv-2513.webp" alt="Cama plana UV 2513 de HanColor, vista tres cuartos" width="1600" height="717" fetchpriority="high">
         </div>
       </div>
       <div class="mview" id="vF">
@@ -151,14 +156,14 @@
 
   <!-- Outline copy of the title in front of the machine -->
   <div class="layer" id="lOutline" aria-hidden="true">
-    <div class="mega outline"><span class="m m1"><span class="mi">CUT THE</span></span><span class="m m2"><span class="mi">DOWNTIME</span></span></div>
+    <div class="mega outline"><span class="m m1"><span class="mi">LA NUEVA GENERACIÓN</span></span><span class="m m2"><span class="mi">DE IMPRESIÓN UV</span></span></div>
   </div>
 
   <!-- ESCENA 1: copy -->
   <div class="layer" id="lCopy">
     <div class="s1-copy">
       <p class="eyebrow">Ricser SRL · Importador directo y exclusivo HanColor</p>
-      <p class="lede">Repuestos, garantías y servicio técnico de tu maquinaria, seguidos en tiempo real.</p>
+      <p class="s1-model">Cama plana UV 2513</p>
     </div>
   </div>
 

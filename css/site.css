@@ -9,7 +9,7 @@
   --disp:"Archivo",system-ui,sans-serif;--ui:"Space Grotesk",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
   --ease:cubic-bezier(.2,0,0,1);
   --hdr:70px;--trkH:0px;--pad:clamp(16px,3vw,44px);
-  --rw:min(56vw,98svh);--rigY:6svh;
+  --rw:min(76vw,150svh);--rigY:12svh;
 }
 *{box-sizing:border-box}
 html{background:var(--abyss);color:var(--ink);-webkit-text-size-adjust:100%}
@@ -110,16 +110,17 @@ main,#top{position:relative;z-index:1}
 #lVideo{z-index:0}#lVideo video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;transition:opacity .4s linear}
 
 /* Monumental title */
-.mega{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);margin:0;font-family:var(--disp);font-weight:800;font-stretch:125%;font-size:min(13vw,30svh);line-height:.9;letter-spacing:-.022em;text-align:center;color:var(--ink)}
-.m{display:block;overflow:hidden;white-space:nowrap;padding:.03em 0}
+.mega{position:absolute;left:0;right:0;top:calc(var(--hdr) + 84px);margin:0;font-family:var(--disp);font-weight:800;font-stretch:125%;font-size:min(6.05vw,13.5svh);line-height:.98;letter-spacing:-.022em;text-align:center;color:var(--ink)}
+.m{display:block;overflow:hidden;white-space:nowrap;padding:.1em 0 .02em}
 .mi{display:block}
 .m1{text-align:left;padding-left:var(--pad)}
+.m2{text-align:right;padding-right:var(--pad)}
 #lTitle .mega{background:none;color:#d9eef0}
 .mega.outline{color:transparent;-webkit-text-stroke:1.5px rgba(197,251,247,.82)}
 
 /* Machine rig */
 #lMachine{display:grid;place-items:center;padding-top:var(--rigY);perspective:1500px}
-#rigOuter{width:var(--rw);aspect-ratio:1120/755;transform-style:preserve-3d;will-change:transform}
+#rigOuter{width:var(--rw);aspect-ratio:1600/717;transform-style:preserve-3d;will-change:transform}
 #rig{position:relative;width:100%;height:100%;transform-style:preserve-3d}
 #rig.zoom,#s4in.zoom{will-change:transform}
 .mview{position:absolute;inset:0;backface-visibility:hidden}
@@ -127,9 +128,15 @@ main,#top{position:relative;z-index:1}
 .v-photo{position:absolute;inset:0}
 .v-photo img{width:100%}
 .v-photo .rim{position:absolute;left:0;top:0;mix-blend-mode:screen}
-/* the 3/4 photo keeps the height of the front view */
-#v34 .v-photo{left:11%;right:11%;bottom:0;top:auto}
-#v34 .v-glow{left:-5%;top:-30%;width:110%}
+/* Hero: 3/4 photo on the abyss, cyan light pooling under it and a reflection on the floor */
+#v34 .v-photo img{filter:drop-shadow(0 0 1px rgba(168,242,238,.5)) drop-shadow(0 0 26px rgba(80,186,183,.26))}
+#v34 .v-glow{display:block;position:absolute;left:6%;right:-3%;top:54%;width:auto;height:76%;opacity:1;background:radial-gradient(closest-side,rgba(80,186,183,.6),rgba(41,130,163,.24) 54%,transparent)}
+.v-reflect{position:absolute;inset:0;opacity:.32;filter:blur(1.2px);pointer-events:none}
+.v-reflect img{position:absolute;left:0;top:0;width:100%;max-width:none;transform-origin:0 0;-webkit-mask-image:linear-gradient(to top,#000,transparent 44%);mask-image:linear-gradient(to top,#000,transparent 44%)}
+.rf-l{clip-path:inset(0 52.3% 0 25%);transform:translateY(104%) matrix(1,.75,0,-1,0,0)}
+.rf-r{clip-path:inset(0 3% 0 47.7%);transform:translateY(209.8%) matrix(1,-.242,0,-1,0,0)}
+/* Scene 2 still uses the previous front view at its own proportion */
+#vF{inset:auto;left:14%;width:72%;aspect-ratio:1120/755;top:50%;margin-top:calc(var(--rw)*-.2427)}
 #fXray{clip-path:inset(0 0 100% 0)}
 #schema{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .sch path{fill:none;stroke:#7fe0db;stroke-width:1.4;vector-effect:non-scaling-stroke;opacity:.9}
@@ -142,13 +149,13 @@ main,#top{position:relative;z-index:1}
 
 /* Scene 1 copy */
 .s1-copy{position:absolute;left:var(--pad);bottom:clamp(20px,4svh,44px);width:min(340px,86vw);display:grid;gap:12px}
-.lede{font-size:clamp(15px,1.25vw,17.5px);line-height:1.42;color:var(--ink2)}
+.s1-model{font:600 clamp(16px,1.4vw,20px)/1.2 var(--disp);font-stretch:112%;color:var(--ink)}
 
 /* Scene 2 */
 .s2-head{position:absolute;left:var(--pad);top:calc(var(--hdr) + 12px);width:min(450px,36vw)}
 .s2-head h2,.cap h2,.s4-top h2{font-family:var(--disp);font-stretch:118%;font-weight:600;line-height:1.05;letter-spacing:-.012em;margin-top:8px}
 .s2-head h2{font-size:clamp(20px,2.15vw,32px)}
-#coLayer{position:absolute;left:50%;top:50%;width:var(--rw);aspect-ratio:1120/755;transform:translate(-50%,calc(-50% + var(--rigY)/2))}
+#coLayer{position:absolute;left:50%;top:50%;width:calc(var(--rw)*.72);aspect-ratio:1120/755;transform:translate(-50%,calc(-50% + var(--rigY)/2))}
 .co{position:absolute;top:var(--y);width:min(calc((100vw - var(--rw))/2 - var(--pad) - 16px),250px);padding:0 0 0 0}
 .co-l{right:calc(100% + 16px)}
 .co-r{left:calc(100% + 16px)}
@@ -458,7 +465,7 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
   #scenes a.on span{display:none}
 }
 @media (max-width:860px){
-  :root{--hdr:60px;--trkH:58px;--rw:94vw;--rigY:-5svh}
+  :root{--hdr:60px;--trkH:58px;--rw:96vw;--rigY:14svh}
   #scenes{display:none}
   .brand img{height:38px}
   .bt-logo{width:82vw}
@@ -470,11 +477,11 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
   .quick input{height:48px;font-size:16px;padding:0 12px}
   .quick button{padding:0 13px;font-size:12.5px}
   .quick p{position:absolute;left:0;right:0;top:calc(100% + 4px);margin:0}
-  .mega{top:calc(var(--hdr) + var(--trkH) + 12px);transform:none;font-size:13vw}
+  .mega{top:calc(var(--hdr) + var(--trkH) + 8px);font-size:9.2vw;text-align:left}
+  .m,.m1,.m2{white-space:normal;text-align:left;padding:.08em 16px .02em}
   #lOutline{display:none}
   #lMachine{align-items:center}
-  .s1-copy{left:16px;right:16px;width:auto;bottom:18px;gap:8px}
-  .lede{font-size:14.5px}
+  .s1-copy{left:16px;right:16px;width:auto;bottom:18px;gap:6px}
   .hud-c{display:none}
   .s2-head{width:auto;right:16px;left:16px;top:calc(var(--hdr) + var(--trkH) + 8px)}
   .s2-head h2{font-size:21px}
@@ -534,11 +541,10 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
 @media (max-width:860px) and (max-height:640px){
   .cp-data{display:none}
   .s4-top .eyebrow{display:none}
-  .lede{display:none}
 }
 
 /* ---------- Static fallback: reduced motion, or the animation libraries did not load ---------- */
-html.static #boot,html.static #iris,html.static .flow,html.static #hud,html.static #lOutline,html.static #v34,html.static #beam,html.static #cursor{display:none}
+html.static #boot,html.static #iris,html.static .flow,html.static #hud,html.static #lOutline,html.static #vF,html.static #beam,html.static #cursor{display:none}
 html.static #stage{height:auto;overflow:visible}
 html.static .layer{position:relative;inset:auto}
 /* Without the pin the page scrolls normally, so the header stays at the top instead of covering the content */
@@ -548,7 +554,7 @@ html.static .quick{position:absolute}
 html.static .quick-r::after{animation:none;opacity:0}
 html.static #lTitle{padding:calc(var(--hdr) + 112px) 0 12px}
 html.static .mega{position:static;transform:none}
-html.static #lMachine{padding:0 var(--pad);display:grid}
+html.static #lMachine{padding:0 var(--pad) 12%;display:grid}
 html.static #fPhoto{clip-path:none}
 html.static #fXray,html.static #schema{display:none}
 html.static #lCopy,html.static #lS2{padding:24px var(--pad)}
