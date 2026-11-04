@@ -48,7 +48,7 @@ const scrollTo = async (page, t) => {
 
 function syntax() {
   section('sintaxis');
-  const files = [...fs.readdirSync(path.join(ROOT, 'js')).map(f => path.join('js', f)), ...fs.readdirSync(path.join(ROOT, 'api')).map(f => path.join('api', f))];
+  const files = ['js', 'api', path.join('api', '_lib'), 'scripts'].flatMap(d => fs.readdirSync(path.join(ROOT, d)).filter(f => f.endsWith('.js')).map(f => path.join(d, f)));
   for (const f of files) {
     try { execFileSync(process.execPath, ['--check', path.join(ROOT, f)], { stdio: 'pipe' }); ok(true, f); } catch { ok(false, `node --check ${f}`); }
   }
@@ -201,7 +201,7 @@ async function factory(browser, w, h) {
   ok(!(await page.locator('#mailDlg').isVisible()), 'Esc cierra el modal');
   await head.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
   ok(await card.locator('.fc-p').isHidden(), 'cierra con teclado');
-  ok(await noOverflow(page), 'sin overflow');
+  ok(await noOverflow(page), 'sin overflow', await page.evaluate(() => { const W = document.documentElement.clientWidth; return [document.documentElement.scrollWidth, W, [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && !e.closest('#stage,.fleet,.tw,.er,.cc-tabs,.car-track')).slice(0, 5).map(e => `${e.tagName}#${e.id}.${String(e.className.baseVal ?? e.className).slice(0, 24)}`)]; }));
   ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
   await ctx.close();
 }
@@ -262,7 +262,7 @@ async function client(browser, w, h) {
   await page.locator('#partFile').setInputFiles({ name: 'falla.png', mimeType: 'image/png', buffer: PNG });
   await page.locator('#ok').click(); await page.waitForTimeout(500);
   ok(await page.evaluate(() => { const e = Ricser.EV.find(x => x.caso === 'GAR-2026-0044'); return e && e.fab.evidencia.length === 1 && e.fab.evidencia[0].por === 'Cliente'; }), 'la foto del pedido queda en el caso');
-  ok(await noOverflow(page), 'sin overflow');
+  ok(await noOverflow(page), 'sin overflow', await page.evaluate(() => { const W = document.documentElement.clientWidth; return [document.documentElement.scrollWidth, W, [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && !e.closest('#stage,.fleet,.tw,.er,.cc-tabs,.car-track')).slice(0, 5).map(e => `${e.tagName}#${e.id}.${String(e.className.baseVal ?? e.className).slice(0, 24)}`)]; }));
   ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
   await ctx.close();
 }
@@ -304,7 +304,7 @@ async function access(browser, w, h) {
   const ta = c.locator('.ch-f textarea');
   await ta.fill('Consulta de fábrica.'); await ta.press('Enter'); await page.waitForTimeout(200);
   ok((await c.locator('.ch-m').last().innerText()).includes('Fábrica'), 'fábrica escribe en el chat con su nombre');
-  ok(await noOverflow(page), 'sin overflow');
+  ok(await noOverflow(page), 'sin overflow', await page.evaluate(() => { const W = document.documentElement.clientWidth; return [document.documentElement.scrollWidth, W, [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && !e.closest('#stage,.fleet,.tw,.er,.cc-tabs,.car-track')).slice(0, 5).map(e => `${e.tagName}#${e.id}.${String(e.className.baseVal ?? e.className).slice(0, 24)}`)]; }));
   ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
   await ctx.close();
 }
@@ -356,7 +356,7 @@ async function service(browser, w, h) {
   await page.locator('.st-card', { hasText: code }).locator('[data-cerrar]').click(); await page.waitForTimeout(250);
   await page.locator('#solF [data-f="cerrada"]').click(); await page.waitForTimeout(150);
   ok((await page.locator('.st-card', { hasText: code }).locator('[data-nota]').inputValue()) === 'Lo llamo a las 10.', 'queda resuelta con su nota');
-  ok(await noOverflow(page), 'sin overflow');
+  ok(await noOverflow(page), 'sin overflow', await page.evaluate(() => { const W = document.documentElement.clientWidth; return [document.documentElement.scrollWidth, W, [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && !e.closest('#stage,.fleet,.tw,.er,.cc-tabs,.car-track')).slice(0, 5).map(e => `${e.tagName}#${e.id}.${String(e.className.baseVal ?? e.className).slice(0, 24)}`)]; }));
   ok(errs.length === 0, 'consola limpia', [...new Set(errs)]);
   await ctx.close();
 }

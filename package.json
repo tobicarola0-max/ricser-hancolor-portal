@@ -1,0 +1,7 @@
+{
+  "name": "ricser-hancolor-portal",
+  "private": true,
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
+}

@@ -315,13 +315,17 @@
       <label class="f">Teléfono<input id="stTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej.: 11 5555 0100" required aria-describedby="stErr"></label>
       <label class="f">¿Qué le está pasando?<textarea id="stMsg" rows="4" placeholder="Ej.: se detiene a mitad del trabajo y marca un error" required aria-describedby="stErr"></textarea></label>
     </div>
+    <div class="st-hp" aria-hidden="true"><label>Dejá este campo vacío<input id="stWeb" tabindex="-1" autocomplete="off"></label></div>
+    <p class="st-priv">Usamos estos datos solo para contactarte por esta solicitud.</p>
+    <p class="st-aviso" id="stDemo">Demostración: esta solicitud no se envía a nadie.</p>
     <p class="f-err" id="stErr" role="alert"></p>
-    <div class="d-foot"><span class="d-acts"><button type="button" class="btn ghost" id="stCx">Cancelar</button><button type="submit" class="btn">Enviar solicitud</button></span></div>
+    <div class="d-foot"><span class="d-acts"><button type="button" class="btn ghost" id="stCx">Cancelar</button><button type="submit" class="btn" id="stOk">Enviar solicitud</button></span></div>
   </form>
   <div id="stDone" hidden>
     <h3>Recibimos tu solicitud</h3>
     <p class="st-num mono" id="stCode"></p>
     <p>Te vamos a llamar al <b id="stTelOk"></b> para coordinar.</p>
+    <p class="st-aviso" id="stDoneDemo">Demostración: no se envió a nadie.</p>
     <div class="d-foot"><span class="d-acts"><button type="button" class="btn" id="stClose">Listo</button></span></div>
   </div>
 </dialog>
@@ -331,8 +335,10 @@
     <p class="d-sub">Para técnicos, administración y fábrica.</p>
     <label class="f">Ingresar como
       <select id="rolSel"><option value="tec">Técnico</option><option value="admin">Administrador</option><option value="fab">Fábrica HanColor</option></select></label>
-    <p class="st-aviso">Prototipo: todavía sin contraseña. Antes de usarlo con clientes reales lleva inicio de sesión.</p>
-    <div class="d-foot"><span class="d-acts"><button type="button" class="btn ghost" id="rolCx">Cancelar</button><button type="submit" class="btn">Ingresar</button></span></div>
+    <div id="rolClaveF" hidden><label class="f">Clave<input id="rolClave" type="password" autocomplete="current-password" aria-describedby="rolErr"></label></div>
+    <p class="st-aviso" id="rolAviso">Demostración: en este sitio no pide clave.</p>
+    <p class="f-err" id="rolErr" role="alert"></p>
+    <div class="d-foot"><span class="d-acts"><button type="button" class="btn ghost" id="rolCx">Cancelar</button><button type="submit" class="btn" id="rolOk">Ingresar</button></span></div>
   </form>
 </dialog>
 <dialog id="mailDlg" aria-labelledby="mbT" data-lenis-prevent>

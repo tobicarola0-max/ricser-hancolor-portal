@@ -2,7 +2,8 @@
   "name": "ricser-hancolor-portal-tests",
   "private": true,
   "scripts": {
-    "test": "node api-notify.js && node e2e.js"
+    "test": "node api-notify.js && node e2e.js",
+    "test:real": "node e2e-real.js"
   },
   "dependencies": {
     "playwright-core": "^1.64.1"

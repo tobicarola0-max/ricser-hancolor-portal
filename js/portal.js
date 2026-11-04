@@ -383,6 +383,7 @@ window.Portal = (() => {
       x.tabIndex = on ? 0 : -1;
       if (on && focus) x.focus();
     });
+    if (id === 'sol') Servicio.actualizar();
     $$('.view').forEach(v => {
       const on = v.id === id;
       v.classList.toggle('on', on);
@@ -442,14 +443,21 @@ window.Portal = (() => {
     Fabrica.init({ toast, openInbox });
     Servicio.init({ toast });
     $('#rolBtn').addEventListener('click', () => {
-      if (getRol() !== 'cliente') { setRol('cliente'); toast('Saliste del acceso interno.'); return; }
+      if (getRol() !== 'cliente') { Servicio.salir(); setRol('cliente'); toast('Saliste del acceso interno.'); return; }
+      $('#rolErr').textContent = '';
+      $('#rolClave').value = '';
       $('#rolDlg').showModal();
       window.__lenis?.stop();
       if (motion()) gsap.fromTo('#rolF', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .35, ease: 'power3.out', clearProps: 'transform,opacity' });
     });
-    $('#rolF').addEventListener('submit', e => {
+    $('#rolF').addEventListener('submit', async e => {
       e.preventDefault();
-      const r = $('#rolSel').value;
+      const r = $('#rolSel').value, btn = $('#rolOk');
+      btn.disabled = true;
+      const res = await Servicio.ingresar(r, $('#rolClave').value);
+      btn.disabled = false;
+      $('#rolClave').value = '';
+      if (!res.ok) { $('#rolErr').textContent = res.error; $('#rolClave').focus(); return; }
       $('#rolDlg').close();
       setRol(r);
       setView(ACCESOS[r].vistas[0]);

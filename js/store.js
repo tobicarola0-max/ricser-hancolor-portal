@@ -233,8 +233,8 @@ window.Ricser = (() => {
   }
 
   /* ---------- Technical service requests ----------
-     They stay in this browser's localStorage, so they survive a reload and the next day on this same computer.
-     TODO: a real database, so a request reaches the person on duty from any device. */
+     Where the real API is on (js/servicio.js), the list comes from the database and is never written to this browser.
+     Anywhere else, such as GitHub Pages, this is a demonstration kept in localStorage. */
   const SOL_KEY = 'ricser.solicitudes';
   const solSubs = [];
   const solSeed = () => [{ id: 1, code: `ST-${new Date().getFullYear()}-0001`, at: new Date(Date.now() - 864e5).toISOString(), equipo: 'DTF Textil 6 cabezales', nombre: 'Contacto de ejemplo', telefono: '11 5555 0100', detalle: 'La impresora se detiene a mitad del trabajo y marca un error en pantalla.', estado: 'nueva' }];
@@ -248,6 +248,12 @@ window.Ricser = (() => {
   const onSol = fn => solSubs.push(fn);
   function solChanged() {
     try { localStorage.setItem(SOL_KEY, JSON.stringify(solicitudes)); } catch { /* private mode: it lasts until reload */ }
+    solSubs.forEach(fn => fn());
+  }
+  // Real data: replaces the list and tells the views, without saving anything in the browser
+  function setSolicitudes(list) {
+    solicitudes.length = 0;
+    solicitudes.push(...list);
     solSubs.forEach(fn => fn());
   }
   function addSolicitud(o) {
@@ -330,5 +336,5 @@ window.Ricser = (() => {
   const shipmentsOf = id => EV.filter(e => e.eq === id && TYPES[e.t].v).sort((a, b) => Number(done(a)) - Number(done(b)) || b.d.localeCompare(a.d));
   const codeOf = e => e.caso || e.pedido || '';
 
-  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, ACCESOS, getRol, setRol, onRol, solicitudes, addSolicitud, updateSolicitud, onSol, updateEquipo, clStep, clName, clDate, ROLES, LIMITS, CLIENTE, outbox, Uploads, checkFile, addEvidence, removeEvidence, addMessage, sendToFactory, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
+  return { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, equipoActivo, setEquipoActivo, onEquipo, ACCESOS, getRol, setRol, onRol, solicitudes, setSolicitudes, addSolicitud, updateSolicitud, onSol, updateEquipo, clStep, clName, clDate, ROLES, LIMITS, CLIENTE, outbox, Uploads, checkFile, addEvidence, removeEvidence, addMessage, sendToFactory, todayISO, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, findShipment, shipmentsOf, codeOf };
 })();

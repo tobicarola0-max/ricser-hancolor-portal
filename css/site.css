@@ -579,6 +579,9 @@ html[data-rol="fab"] .pz-mail{display:none}
 #stDone>p:not(.st-num){margin-top:8px;color:var(--ink2)}
 #stDone b{font-weight:500;color:var(--ink)}
 .st-aviso{margin-top:12px;font-size:13px;color:var(--amber)}
+.st-aviso[hidden],#rolClaveF[hidden]{display:none}
+.st-priv{margin-top:10px;font-size:12.5px;color:var(--ink3)}
+.st-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 #solL{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px;align-items:start}
 .st-card{display:grid;gap:8px;padding:16px 18px}
 .st-card h3{margin:0;font:600 18px/1.2 var(--disp);font-stretch:110%}
