@@ -73,7 +73,7 @@ html.booting main{visibility:hidden}
 /* ---------- Header ---------- */
 #top{position:fixed;left:0;right:0;top:0;height:var(--hdr);z-index:40;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 var(--pad);background:linear-gradient(rgba(0,15,22,.82),rgba(0,15,22,0))}
 .brand{display:block;flex:none}
-.brand img{height:48px;width:auto;filter:brightness(1.12) contrast(1.08) drop-shadow(0 1px 10px rgba(0,15,22,.75))}
+.brand img{height:45px;width:auto;filter:brightness(1.12) contrast(1.08) drop-shadow(0 1px 10px rgba(0,15,22,.75))}
 #scenes{display:flex;gap:2px}
 #scenes a{display:flex;gap:7px;align-items:center;padding:8px 10px;color:var(--ink3);text-decoration:none;font:500 11.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;transition:color .2s var(--ease)}
 #scenes a i{font-style:normal;color:inherit}
