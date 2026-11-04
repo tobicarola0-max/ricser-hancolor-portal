@@ -38,7 +38,7 @@ Imagen inicial: `PLOTTER 8 CABEZALES.png` · Duración: 8 s
 Duración: 5 s · Se usa entre escena 2 y 3
 > Extreme macro fly-through entering a microscopic inkjet printhead nozzle. The camera accelerates through a perfectly circular metal aperture lined with a thin cyan glowing ring, passes through a dark tunnel of tiny nozzles, and bursts out into a black void filled with a grid of glowing cyan dots. Continuous forward motion, motion blur at the edges, deep black, teal and cyan light only.
 
-### 6. Núcleo: malla de puntos
+### 6. Institucional: malla de puntos
 Duración: 8 s, loop · Fondo de la escena 3
 > Seamless loop. Abstract infinite grid of small glowing dots on a pitch-black background, gentle waves of brightness travel through the grid like a frequency signal, colours cyan and steel blue only. Camera perfectly locked. Minimal, technical, halftone pattern, no objects, no text.
 
@@ -72,9 +72,9 @@ const VIDEO_PLATES = [
 | Unidades | Escena |
 |---|---|
 | 0 a 1,6 | 1. The Awakening |
-| 1,6 a 4,3 | 2. Anatomía y rayos X |
+| 1,6 a 4,3 | 2. Información técnica |
 | 4,3 a 4,65 | Portal #1 |
-| 4,65 a 7,1 | 3. Núcleo |
+| 4,65 a 7,1 | 3. Institucional |
 | 7,1 a 8,6 | 4. Telemetría |
 | 8,6 a 9,4 | Portal #2 |
 | 9,4 a 9,8 | Pantalla de entrada al Command Center |

@@ -139,7 +139,7 @@ window.Halftone = (() => {
       <g>${plane}<animateMotion dur="9s" repeatCount="indefinite" rotate="auto"><mpath href="#airR"/></animateMotion></g>
       <circle class="rt-hub" cx="${h[0]}" cy="${h[1]}" r="7"/><circle class="rt-hub2" cx="${h[0]}" cy="${h[1]}" r="16"/>
       <text class="rt-t rt-b" x="${h[0] + 22}" y="${h[1] + 5}" font-size="${fs + 2}">${HUB.n}</text>
-      <text class="rt-t rt-air" x="${mobile ? W - 12 : W * .96}" y="${mobile ? H * .225 : H * .1}" text-anchor="end" font-size="${fs}">VUELO DIRECTO · FÁBRICA HANCOLOR</text>`;
+      <text class="rt-t rt-air" x="${mobile ? W - 12 : W * .96}" y="${mobile ? H * .225 : Math.max(H * .1, 172)}" text-anchor="end" font-size="${fs}">VUELO DIRECTO · FÁBRICA HANCOLOR</text>`;
     if (!svg.classList.contains('on')) svg.pauseAnimations?.();
   }
 

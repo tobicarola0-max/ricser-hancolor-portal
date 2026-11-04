@@ -62,7 +62,7 @@
   <nav id="scenes" aria-label="Escenas">
     <a href="#stage" data-go="s1" class="on"><i>01</i><span>Awakening</span></a>
     <a href="#stage" data-go="s2"><i>02</i><span>Información técnica</span></a>
-    <a href="#stage" data-go="s3"><i>03</i><span>Núcleo</span></a>
+    <a href="#stage" data-go="s3"><i>03</i><span>Institucional</span></a>
     <a href="#stage" data-go="s4"><i>04</i><span>Telemetría</span></a>
     <a href="#portal" data-go="portal"><i>05</i><span>Command Center</span></a>
   </nav>
@@ -139,14 +139,37 @@
     </div>
   </div>
 
-  <!-- ESCENA 3: halftone core -->
-  <div class="layer" id="s3">
+  <!-- ESCENA 3: institutional copy over the halftone mesh. TODO: validar con cliente (todo el texto y las cifras de esta escena) -->
+  <div class="layer" id="s3" role="group" aria-label="Institucional: quiénes somos">
     <canvas id="halftone" aria-label="Malla de puntos interactiva: mira de registro, símbolo Ricser y mapa de distribución" role="img"></canvas>
     <svg id="routes" aria-hidden="true"></svg>
     <div class="s3-copy">
-      <div class="cap" id="capA"><p class="eyebrow">03 · El núcleo Ricser</p><h2>Todo parte de <em>un punto de registro.</em></h2><p>Tu equipo, su serie y su historial, alineados en un solo lugar.</p></div>
-      <div class="cap" id="capB"><p class="eyebrow">03 · Importación directa</p><h2>De fábrica a tu planta, <em>sin intermediarios.</em></h2><p>Ricser importa HanColor en forma directa y exclusiva.</p></div>
-      <div class="cap" id="capC"><p class="eyebrow">03 · Red de distribución</p><h2>Aire y tierra, <em>en una sola línea.</em></h2><p class="hint-mouse">Mové el cursor: la malla responde.</p></div>
+      <div class="cap" id="capA">
+        <p class="eyebrow">03 · Institucional</p>
+        <h2>Quiénes <em>somos.</em></h2>
+        <p>Ricser es importador directo y exclusivo de HanColor: equipos, repuestos, soporte técnico y capacitación, en un solo lugar.</p>
+      </div>
+      <div class="cap" id="capB">
+        <p class="eyebrow">03 · Ricser en cifras</p>
+        <h2>Respaldo <em>que se mide.</em></h2>
+        <!-- TODO: validar con cliente. XX marks a figure Ricser still has to confirm: do not publish with invented numbers -->
+        <dl class="nums">
+          <div><dt>Años de trayectoria</dt><dd class="mono">XX</dd></div>
+          <div><dt>Equipos instalados</dt><dd class="mono">XX</dd></div>
+          <div><dt>Provincias con cobertura</dt><dd class="mono">XX</dd></div>
+        </dl>
+        <p class="todo-note">Cifras a validar con el cliente.</p>
+      </div>
+      <div class="cap" id="capC">
+        <p class="eyebrow">03 · Cómo trabajamos</p>
+        <h2>Tres pilares, <em>un solo interlocutor.</em></h2>
+        <ul class="pillars">
+          <li><b>Importación directa</b><span>De fábrica a tu planta, sin intermediarios.</span></li>
+          <li><b>Repuestos y soporte</b><span>Cada pieza y cada garantía, con seguimiento por caso.</span></li>
+          <li><b>Capacitación</b><span>Tu operador, listo para sacarle el máximo al equipo.</span></li>
+        </ul>
+        <p class="hint-mouse">Mové el cursor: la malla responde.</p>
+      </div>
     </div>
   </div>
 
