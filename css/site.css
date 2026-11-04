@@ -86,7 +86,7 @@ html.booting main{visibility:hidden}
 .skip:hover{background:var(--cyan);color:var(--abyss)}
 
 /* Quick tracker: hangs below "Entrar al portal" and is the loudest thing in the header */
-.hd-r{position:relative;flex:none;display:flex;justify-content:flex-end}
+.header-right{position:relative;flex:none;display:flex;justify-content:flex-end}
 .quick{position:absolute;right:0;top:calc(100% + 8px);width:clamp(310px,27vw,390px);transition:opacity .25s var(--ease),visibility .25s,transform .25s var(--ease)}
 #top.trk-off .quick{opacity:0;visibility:hidden;transform:translateY(-8px)}
 /* From scene 4 on, content scrolls under the header: it gets a solid background so the logo stays clean */
@@ -94,10 +94,11 @@ html.booting main{visibility:hidden}
 .quick label{display:block;margin-bottom:6px;font:800 13px/1.2 var(--disp);font-stretch:112%;letter-spacing:.09em;text-transform:uppercase;color:#e4fffd;text-shadow:0 1px 8px rgba(0,15,22,.9)}
 .quick-r{position:relative;display:flex;background:rgba(0,15,22,.9);border:1px solid var(--cyan);border-radius:4px;box-shadow:0 0 0 1px rgba(80,186,183,.2),0 0 22px rgba(80,186,183,.34),0 10px 28px rgba(0,15,22,.5);transition:box-shadow .2s var(--ease)}
 .quick-r::after{content:"";position:absolute;inset:-1px;border:1px solid var(--cyan);border-radius:4px;pointer-events:none;animation:trkPulse 2.8s var(--ease) infinite}
-.quick-r:focus-within{box-shadow:0 0 0 1px var(--cyan),0 0 30px rgba(80,186,183,.55),0 10px 28px rgba(0,15,22,.5)}
+.quick-r:focus-within{box-shadow:0 0 0 1px var(--cyan),0 0 30px rgba(80,186,183,.55),0 10px 28px rgba(0,15,22,.5);animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--cyan)}70%{box-shadow:0 0 8px 4px var(--cyan)}100%{box-shadow:0 0 0 0 var(--cyan)}}
 .quick-r:focus-within::after{animation:none;opacity:0}
 @keyframes trkPulse{0%{opacity:.8;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.05,1.22)}}
-.quick input{flex:1;min-width:0;height:50px;background:none;border:0;padding:0 14px;font:500 15px var(--mono);letter-spacing:.02em;outline:0}
+.quick input{flex:1;min-width:0;height:50px;background:none;border:0;padding:0 14px;font:500 18px var(--mono);letter-spacing:0;outline:0}
 .quick input::placeholder{color:var(--ink3);opacity:1}
 .quick button{flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 16px;background:var(--cyan);border:0;border-radius:0 3px 3px 0;color:var(--abyss);font:800 13px var(--disp);font-stretch:108%;letter-spacing:.04em;text-transform:uppercase;transition:background-color .15s var(--ease)}
 .quick button:hover{background:#7fdcd8}
@@ -728,6 +729,7 @@ html.static #top{position:absolute}
 html.static .cc-bar{top:0}
 html.static .quick{position:absolute}
 html.static .quick-r::after{animation:none;opacity:0}
+html.static .quick-r:focus-within{animation:none}
 html.static #lTitle{padding:calc(var(--hdr) + 112px) 0 12px}
 html.static .mega{position:static;transform:none}
 html.static #lMachine{padding:0 var(--pad) 12%;display:grid}
@@ -746,4 +748,4 @@ html.static #s4{padding:32px 0}
 html.static #s4in{position:relative;inset:auto;margin:0 var(--pad);pointer-events:auto;min-height:620px}
 html.static #s5{min-height:40svh;padding:32px 0}
 html.static .fleet-track,html.static .reg,html.static .rt-hub2,html.static .r-flow,html.static .pill .dot{animation:none}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}.quick-r::after{animation:none;opacity:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.quick-r::after{animation:none;opacity:0}.quick-r:focus-within{animation:none}}

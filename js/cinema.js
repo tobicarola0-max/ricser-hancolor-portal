@@ -107,7 +107,7 @@
     ScrollTrigger.addEventListener('refresh', () => { lenis.resize(); measureA2?.(); if (tl) { hudIdx = -1; updateHud(tl.time()); } });
     if (deepLink) {
       S.ring = 0; S.beam = 1;
-      gsap.set('.brand, #scenes, .hd-r, #hud', { clearProps: 'opacity,visibility' });
+      gsap.set('.brand, #scenes, .header-right, #hud', { clearProps: 'opacity,visibility' });
       if (deepCase && Tracker.search(deepCase, { deferPlay: true })) lenis.scrollTo(st.start + (st.end - st.start) * LABELS.s4 / TOTAL, { immediate: true, force: true });
       else lenis.scrollTo('#portal', { immediate: true, force: true, offset: -portalOffset() });
       ScrollTrigger.update();
@@ -126,7 +126,7 @@
     const from = logo.getBoundingClientRect(), to = $('.brand img').getBoundingClientRect();
     const H = innerHeight, D = 1.6, restY = S.ringY, ease = 'expo.inOut';
 
-    gsap.set('.brand, #scenes, .hd-r', { autoAlpha: 0 });
+    gsap.set('.brand, #scenes, .header-right', { autoAlpha: 0 });
     S.ringY = restY - 1.25; S.drop = 1.25; S.flow = .75;
 
     const i = introTl = gsap.timeline({
@@ -155,7 +155,7 @@
       .from('.m2 .mi', { yPercent: 112, duration: 1.15, ease: 'expo.out' }, D * .6 + .09)
       .from('.s1-copy > *', { y: 18, autoAlpha: 0, duration: .55, stagger: .07, ease: 'power3.out', clearProps: 'transform,opacity,visibility' }, D * .85)
       .from('#hud', { autoAlpha: 0, duration: .6, clearProps: 'opacity,visibility' }, D * .9)
-      .to('#scenes, .hd-r', { autoAlpha: 1, duration: .5, clearProps: 'opacity,visibility' }, D * .85)
+      .to('#scenes, .header-right', { autoAlpha: 1, duration: .5, clearProps: 'opacity,visibility' }, D * .85)
       // The flying logo lands exactly over the header logo and hands over to it
       .set('.brand', { autoAlpha: 1 }, D + .06)
       .set(logo, { autoAlpha: 0 }, D + .07)
