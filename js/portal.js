@@ -1,4 +1,4 @@
-/* Scene 5: Command Center. Four functional views ported from "Portal de servicio técnico.html":
+/* Scene 5: Portal del cliente. Four functional views ported from "Portal de servicio técnico.html":
    client portal, internal panel, manufacturer portal and the data model. */
 window.Portal = (() => {
   const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, addEvent, updateEvent, codeOf } = Ricser;

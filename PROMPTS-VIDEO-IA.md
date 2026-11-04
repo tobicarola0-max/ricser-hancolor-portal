@@ -50,7 +50,7 @@ Duración: 8 s · Fondo de la escena 3 o 4
 Duración: 5 s · Se usa entre escena 4 y 5
 > Camera rushes forward into a glowing cyan optical registration mark, a thin circle with a precise crosshair, floating in a dark teal void. The circle grows to fill the entire frame and the camera passes through it into a deep, softly lit teal space with faint technical grid lines. Fast acceleration, then a gentle settle. Motion blur, no text.
 
-### 9. Fondo del Command Center
+### 9. Fondo del Portal del cliente
 Duración: 10 s, loop · Debajo de los paneles del portal
 > Seamless loop. Very slow-moving volumetric teal fog in a dark space, faint shafts of steel blue light from above, a barely visible millimetric grid in the distance. Extremely subtle movement, low contrast, deep black-cyan tones, designed as a background behind interface panels. No objects, no text.
 
@@ -77,6 +77,6 @@ const VIDEO_PLATES = [
 | 4,65 a 7,1 | 3. Institucional |
 | 7,1 a 8,6 | 4. Seguimiento |
 | 8,6 a 9,4 | Portal #2 |
-| 9,4 a 9,8 | Pantalla de entrada al Command Center |
+| 9,4 a 9,8 | Pantalla de entrada al Portal del cliente |
 
 Los clips quedan por debajo de la escena 3, que tiene fondo opaco. Para usar un video ahí, primero hay que quitar el fondo de `#s3` en [css/site.css](css/site.css).

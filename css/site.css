@@ -311,7 +311,7 @@ html.no-webgl #s3{background:var(--abyss) url(../assets/marca/ricser-logo-blanco
 .hud-bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--line2)}
 .hud-bar i{display:block;height:100%;background:var(--cyan);transform:scaleX(0);transform-origin:left;will-change:transform}
 
-/* ---------- Command Center ---------- */
+/* ---------- Portal del cliente ---------- */
 #portal{position:relative;z-index:2;background:radial-gradient(60% 500px at 80% 240px,rgba(11,92,124,.42),transparent 72%),radial-gradient(50% 500px at 8% 800px,rgba(41,130,163,.2),transparent 72%)}
 .cc-bar{position:sticky;top:var(--hdr);z-index:20;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px var(--pad);background:rgba(0,15,22,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-block:1px solid var(--line2)}
 .cc-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0}
