@@ -170,13 +170,14 @@ window.Portal = (() => {
     }).join('');
   }
 
-  /* ---------- MAILS SENT (internal panel: the factory never sees client addresses) ---------- */
+  /* ---------- MAILS SENT (the button in the bar hides on the factory tab: it never sees client addresses) ---------- */
   let mailSel = null;
   const MAIL_STATE = { demo: 'Demo, no salió', pendiente: 'Enviando', enviado: 'Enviado', error: 'Falló' };
 
   function renderInbox() {
     const list = Notifier.outbox, cur = list.find(m => m.id === mailSel) || list[0];
     $('#mbMode').textContent = Notifier.real ? 'Envío real' : 'Modo demo';
+    $('#mailsN').textContent = list.length;
     $('#mbList').innerHTML = list.length ? list.map(m => `<li><button type="button" class="mb-i" data-mail="${m.id}" aria-pressed="${m === cur}">
         <b>${esc(m.subject)}</b>
         <span>Para ${esc(m.toName)} · ${esc(m.to)}</span>
@@ -188,11 +189,11 @@ window.Portal = (() => {
   }
 
   function openInbox() {
-    setView('int');
-    const box = $('#mailBox');
-    if (window.__lenis && motion()) window.__lenis.scrollTo(box, { offset: -130, duration: 1.1, force: true });
-    else box.scrollIntoView();
-    box.focus({ preventScroll: true });
+    renderInbox();
+    $('#mailDlg').showModal();
+    window.__lenis?.stop();
+    // Same rule as the request dialog: animate what is inside, never the <dialog> itself
+    if (motion()) gsap.fromTo('#mailIn', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .35, ease: 'power3.out', clearProps: 'transform,opacity' });
   }
 
   /* ---------- DATA MODEL ---------- */
@@ -290,6 +291,7 @@ window.Portal = (() => {
       v.classList.toggle('on', on);
       v.hidden = !on;
     });
+    $('#mailsBtn').hidden = id === 'fab';
     if (motion()) gsap.fromTo(`#${id} > *`, { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .4, stagger: .05, ease: 'power3.out', clearProps: 'transform,opacity,visibility' });
   }
 
@@ -319,6 +321,10 @@ window.Portal = (() => {
     $('#mbList').addEventListener('click', e => { const b = e.target.closest('[data-mail]'); if (b) { mailSel = Number(b.dataset.mail); renderInbox(); } });
     Notifier.on(m => { renderInbox(); if (m.estado !== 'error') toast(`Mail enviado a ${m.toName}`); else toast(`No se pudo enviar el mail a ${m.toName}`); });
     renderInbox();
+    $('#mailsBtn').addEventListener('click', openInbox);
+    $('#mbClose').addEventListener('click', () => $('#mailDlg').close());
+    $('#mailDlg').addEventListener('close', () => window.__lenis?.start());
+    $('#mailDlg').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 
     const tabs = $('.cc-tabs');
     tabs.addEventListener('click', e => { const b = e.target.closest('[role=tab]'); if (b) setView(b.dataset.v); });

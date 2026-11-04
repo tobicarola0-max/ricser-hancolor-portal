@@ -130,7 +130,7 @@ window.Fabrica = (() => {
       b.querySelector('small').textContent = e.hist && e.hist[i] && i <= e.s ? fmt(e.hist[i]) : '';
     });
     const m = Notifier.outbox.find(x => x.caso === e.caso);
-    card.querySelector('[data-mail]').innerHTML = `${m ? `<span>Último aviso al cliente: <b>${esc(m.subject)}</b> · ${hora(m.at)}</span>` : '<span>Todavía no se avisó al cliente sobre este caso.</span>'}<button type="button" class="link" data-inbox>Ver bandeja de mails</button>`;
+    card.querySelector('[data-mail]').innerHTML = `${m ? `<span>Último aviso al cliente: <b>${esc(m.subject)}</b> · ${hora(m.at)}</span>` : '<span>Todavía no se avisó al cliente sobre este caso.</span>'}<button type="button" class="link" data-inbox>Ver mails enviados</button>`;
   }
 
   function fillPanel(e) {
