@@ -204,7 +204,7 @@
     tl.fromTo('.m1', { xPercent: 0 }, { xPercent: -24, duration: 1.35, ease: 'power1.in', immediateRender: false }, 0)
       .fromTo('.m2', { xPercent: 0 }, { xPercent: 24, duration: 1.35, ease: 'power1.in', immediateRender: false }, 0)
       .fromTo('#lTitle, #lOutline', { autoAlpha: 1 }, { autoAlpha: 0, duration: .4, immediateRender: false }, .85)
-      .fromTo('#lCopy', { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -24, duration: .3, immediateRender: false }, .18)
+      .fromTo('#lCopy', { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -24, duration: .3, immediateRender: false }, .45)
       .fromTo(S, { flow: .22 }, { flow: 1, duration: .75, ease: 'power2.in', immediateRender: false }, 0)
       .fromTo(S, { flow: 1 }, { flow: .3, duration: .6, ease: 'power2.out', immediateRender: false }, .85)
       .fromTo(S, { word: 0 }, { word: 1, duration: .5, ease: 'power2.out', immediateRender: false }, .22)

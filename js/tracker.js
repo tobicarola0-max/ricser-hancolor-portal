@@ -1,12 +1,12 @@
-/* Scene 4: spare-parts tracker. Six stages for warranty parts (plane on the arc, truck on the ground rail),
-   four for supplies (truck only). Reads live from Ricser, so admin and factory edits move the vehicles. */
+/* Scene 4: tracking as the client sees it, in three stages: the plane flies the middle one and the truck closes the last.
+   Reads live from Ricser, so admin and factory edits move the vehicles. */
 window.Tracker = (() => {
-  const { EQ, TYPES, ICON, esc, fmt, done, findShipment, shipmentsOf, codeOf, on } = Ricser;
+  const { EQ, TYPES, ICON, esc, fmt, done, findShipment, shipmentsOf, codeOf, on, clStep, clName } = Ricser;
   const $ = s => document.querySelector(s);
 
   // Rail geometry in viewBox units
-  const AIR = { d: 'M50 186 L410 186 C500 186 530 52 640 52 C750 52 780 186 870 186 L1150 186', nodes: [[50, 186], [230, 186], [410, 186], [640, 52], [870, 186], [1150, 186]] };
-  const GROUND = { d: 'M50 186 L1150 186', nodes: [[50, 186], [417, 186], [783, 186], [1150, 186]] };
+  const AIR = { d: 'M50 186 L410 186 C500 186 530 52 640 52 C750 52 780 186 870 186 L1150 186', nodes: [[50, 186], [640, 52], [1150, 186]] };
+  const GROUND = { d: 'M50 186 L1150 186', nodes: [[50, 186], [600, 186], [1150, 186]] };
 
   let cur = null, vehTween = null, lastPos = null, renderHook = null;
   const motion = () => !!window.gsap && !document.documentElement.classList.contains('static');
@@ -21,8 +21,7 @@ window.Tracker = (() => {
   }
 
   function header(e, q) {
-    const T = TYPES[e.t];
-    const stage = T.steps[e.s];
+    const stage = clName(e);
     return `<div class="cp-top">
       <div class="cp-id"><b class="mono">${esc(codeOf(e))}</b><span>${esc(q.m)} · Serie ${esc(q.s)}</span></div>
       <span class="pill ${done(e) ? 'ok' : ''}"><i class="dot"></i>${esc(stage)}</span>
@@ -36,47 +35,42 @@ window.Tracker = (() => {
       ['Guía aérea', e.guia ? esc(e.guia) : 'Pendiente de fábrica'],
       ['Transportista', e.carrier ? esc(e.carrier) : 'A confirmar'],
       ['Llegada estimada', e.eta ? fmt(e.eta) : 'A confirmar'],
-      ['Etapa', `${e.s + 1} de ${T.steps.length}`],
+      ['Etapa', `${clStep(e) + 1} de ${T.cl.length}`],
     ] : [
       ['Pedido', esc(e.ti)],
       ['Inicio', fmt(e.d)],
       ['Transporte', 'Distribución local'],
-      ['Etapa', `${e.s + 1} de ${T.steps.length}`],
+      ['Etapa', `${clStep(e) + 1} de ${T.cl.length}`],
     ];
     return `<dl class="cp-data">${rows.map(r => `<div><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('')}</dl>`;
   }
 
   function list(e) {
-    const T = TYPES[e.t];
-    return `<ol class="rail-v">${T.steps.map((s, k) => {
-      const st = k < e.s || done(e) ? 'd' : k === e.s ? 'n' : '';
-      const showIcon = k === e.s;
-      const icon = (e.t === 'repuesto' && k >= 4) || e.t === 'insumo' ? ICON.truck : ICON.plane;
-      const last = k === T.steps.length - 1;
-      return `<li class="${st}"><span class="rv-n${last ? ' portal-target' : ''}">${showIcon ? icon : ''}</span><span>${esc(s)}</span></li>`;
+    const T = TYPES[e.t], cur = clStep(e);
+    return `<ol class="rail-v">${T.cl.map((s, k) => {
+      const st = k < cur || done(e) ? 'd' : k === cur ? 'n' : '';
+      const icon = (e.t === 'repuesto' && k === 2) || e.t === 'insumo' ? ICON.truck : ICON.plane;
+      const last = k === T.cl.length - 1;
+      return `<li class="${st}"><span class="rv-n${last ? ' portal-target' : ''}">${k === cur ? icon : ''}</span><span>${esc(s)}</span></li>`;
     }).join('')}</ol>`;
   }
 
   function svg(e) {
     const G = e.t === 'repuesto' ? AIR : GROUND;
-    const T = TYPES[e.t];
+    const T = TYPES[e.t], cur = clStep(e);
     const nodes = G.nodes.map((n, k) => {
-      const st = k < e.s || done(e) ? 'd' : k === e.s ? 'n' : '';
-      const air = e.t === 'repuesto' && k === 3;
+      const st = k < cur || done(e) ? 'd' : k === cur ? 'n' : '';
+      const air = e.t === 'repuesto' && k === 1;
       const last = k === G.nodes.length - 1;
-      const label = T.steps[k].split(' ');
-      // two-line labels so that long stage names never collide
-      const mid = Math.ceil(label.length / 2);
-      const lines = label.length > 1 ? [label.slice(0, mid).join(' '), label.slice(mid).join(' ')] : [T.steps[k]];
-      const ly = air ? n[1] - 34 - (lines.length - 1) * 18 : n[1] + 46; // clears the vehicle parked on the node
+      const ly = air ? n[1] - 34 : n[1] + 46; // clears the vehicle parked on the node
       const anchor = k === 0 ? 'start' : last ? 'end' : 'middle';
       const lx = k === 0 ? n[0] - 16 : last ? n[0] + 16 : n[0];
       return `<g class="node ${st}">
         ${last ? `<g class="portal-target" transform="translate(${n[0]} ${n[1]})"><circle r="14"/><path d="M0-24V24M-24 0H24"/></g>` : `<circle cx="${n[0]}" cy="${n[1]}" r="7"/>`}
-        <text x="${lx}" y="${ly}" text-anchor="${anchor}">${lines.map((l, i) => `<tspan x="${lx}" dy="${i ? 18 : 0}">${esc(l)}</tspan>`).join('')}</text>
+        <text x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(T.cl[k])}</text>
       </g>`;
     }).join('');
-    return `<svg id="railSvg" viewBox="0 0 1200 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T.steps[e.s])}, etapa ${e.s + 1} de ${T.steps.length}">
+    return `<svg id="railSvg" viewBox="0 0 1200 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T.cl[cur])}, etapa ${cur + 1} de ${T.cl.length}">
       <defs><linearGradient id="litG" x1="0" x2="1"><stop offset="0" stop-color="#2982a3"/><stop offset="1" stop-color="#50bab7"/></linearGradient></defs>
       <path class="r-base" d="${G.d}"/>
       <path class="r-glow" id="rGlow" d="${G.d}"/>
@@ -97,13 +91,8 @@ window.Tracker = (() => {
 
   // Lengths along the path for the plane and truck at every stage
   function stops(e, path) {
-    const L = nodeLens(e, path);
-    if (e.t === 'repuesto') {
-      const atStage = [L[0], L[1], L[2], L[3], L[4] + (L[5] - L[4]) * .5, L[5]];
-      return { lit: atStage[e.s], plane: e.s >= 4 ? L[4] : e.s === 3 ? L[3] : L[2], truck: e.s >= 5 ? L[5] : e.s === 4 ? atStage[4] : L[4] };
-    }
-    const mid = [L[0], L[1], L[2], L[3]];
-    return { lit: mid[e.s], truck: mid[e.s] };
+    const L = nodeLens(e, path), k = clStep(e);
+    return e.t === 'repuesto' ? { lit: L[k], plane: L[Math.min(k, 1)], truck: L[2] } : { lit: L[k], truck: L[k] };
   }
 
   function place(el, path, len, flat) {
@@ -121,7 +110,7 @@ window.Tracker = (() => {
     const path = $('#rLit'), glow = $('#rGlow');
     if (!path) return;
     const s = stops(e, path), L = nodeLens(e, path), plane = $('#vPlane'), truck = $('#vTruck'), total = path.getTotalLength();
-    const start = from || (e.t === 'repuesto' ? { lit: 0, plane: L[2], truck: L[4] } : { lit: 0, plane: 0, truck: 0 });
+    const start = from || (e.t === 'repuesto' ? { lit: 0, plane: L[0], truck: L[2] } : { lit: 0, plane: 0, truck: 0 });
     if (e.t !== 'repuesto') start.plane = 0;
     const state = Object.assign({}, start);
     const apply = () => {
@@ -139,10 +128,16 @@ window.Tracker = (() => {
       Object.assign(state, { lit: s.lit, plane: s.plane || 0, truck: s.truck }); apply(); lastPos = Object.assign({}, state);
     }
     apply();
-    $('#vPlane')?.classList.toggle('dim', e.s < 3 || e.s >= 4);
-    $('#vPlane')?.classList.toggle('live', e.s === 3);
-    $('#vTruck')?.classList.toggle('dim', e.t === 'repuesto' && e.s < 4);
-    $('#vTruck')?.classList.toggle('live', (e.t === 'repuesto' && e.s === 4) || (e.t === 'insumo' && !done(e)));
+    const k = clStep(e);
+    if (plane) {
+      plane.style.display = k === 2 ? 'none' : '';
+      plane.classList.toggle('dim', k === 0);
+      plane.classList.toggle('live', k === 1);
+    }
+    if (truck) {
+      truck.style.display = e.t === 'repuesto' && k < 2 ? 'none' : '';
+      truck.classList.toggle('live', e.t === 'insumo' && !done(e));
+    }
     $('#rFlow')?.classList.toggle('off', done(e));
   }
 

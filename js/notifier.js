@@ -2,7 +2,7 @@
    where the API key stays on the server (a browser has no process.env and must never see a key). That function only
    exists on Vercel: on any other host, or without a key, the flow runs in demo mode and nothing leaves. */
 window.Notifier = (() => {
-  const { EQ, TYPES, CLIENTE, outbox, fmt } = Ricser;
+  const { EQ, TYPES, CLIENTE, outbox, fmt, clStep } = Ricser;
   const subs = [];
   const endpoint = /\.vercel\.app$/.test(location.hostname) ? '/api/notify' : null;
   let nextId = 1, real = false; // real only once the server confirms it sent one
@@ -28,9 +28,9 @@ window.Notifier = (() => {
   }
 
   function avisarAvance(e, motivo) {
-    const q = EQ.find(x => x.id === e.eq), steps = TYPES[e.t].steps;
+    const q = EQ.find(x => x.id === e.eq), steps = TYPES[e.t].cl, k = clStep(e);
     const data = {
-      caso: e.caso, cliente: CLIENTE.nombre, equipo: q.m, pieza: e.ti, estado: steps[e.s], etapa: e.s + 1, etapas: steps.length,
+      caso: e.caso, cliente: CLIENTE.nombre, equipo: q.m, pieza: e.ti, estado: steps[k], etapa: k + 1, etapas: steps.length,
       awb: e.guia || '', transportista: e.carrier || '', eta: e.eta ? fmt(e.eta) : '', motivo,
       seguimiento: `${location.origin}${location.pathname}?caso=${encodeURIComponent(e.caso)}`,
     };

@@ -140,6 +140,7 @@ html.booting main{visibility:hidden}
 
 /* Scene 1 copy */
 .s1-copy{position:absolute;left:var(--pad);bottom:clamp(20px,4svh,44px);width:min(340px,86vw);display:grid;gap:12px}
+.st-cta{justify-self:start;pointer-events:auto;min-height:50px;padding:0 22px;font:800 14px var(--disp);font-stretch:108%;letter-spacing:.03em;text-transform:uppercase;box-shadow:0 0 24px rgba(80,186,183,.34)}
 .s1-model{font:600 clamp(16px,1.4vw,20px)/1.2 var(--disp);font-stretch:112%;color:var(--ink)}
 
 /* Scene 2: technical sheet */
@@ -531,7 +532,8 @@ textarea[aria-invalid="true"],.fc-ob textarea[aria-invalid="true"]{border-color:
 .ch-att svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.4}
 .ch-file{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--ink2)}
 .ch-acts .btn[type=submit]{margin-left:auto;min-height:42px}
-.pz-tl{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.pz-fs{display:grid;gap:10px;min-width:0;margin:0;padding:0;border:0}
+.pz-tl{display:grid;grid-template-columns:repeat(var(--n,6),minmax(0,1fr));gap:4px}
 .pz-tl button,.pz-b{display:grid;gap:3px;align-content:start;width:100%;min-height:62px;padding:0 4px 4px 0;text-align:left;background:none;border:0;color:var(--ink3);font-size:13.5px;transition:color .15s var(--ease)}
 .pz-tl button::before,.pz-b::before{content:"";display:block;height:4px;margin-bottom:6px;background:var(--line2);transition:background-color .25s var(--ease)}
 .pz-tl button:hover{color:var(--ink)}
@@ -549,7 +551,51 @@ textarea[aria-invalid="true"],.fc-ob textarea[aria-invalid="true"]{border-color:
 .pz-mail b{font-weight:500;color:var(--ink)}
 .pz-mail .link{padding-top:0}
 
-/* Client view: a warranty claim expands into its detail */
+/* Who sees what. Prototype: this hides, it does not protect */
+html[data-rol="tec"] [data-admin]{display:none!important}
+html[data-rol="fab"] .pz-mail{display:none}
+.cc-rol{flex:none;min-height:40px;padding:0 12px;font-size:13.5px;font-weight:500}
+.cc-mails+.cc-rol{margin-left:0}
+.cc-mails[hidden]+.cc-rol{margin-left:auto}
+.cc-tabs .tab-n{margin-left:4px;color:var(--amber)}
+.fc-send[hidden]{display:none}
+
+/* Client view */
+.cl-datos{margin-bottom:14px}
+.cl-dl{display:grid;gap:8px;margin:10px 0 0}
+.cl-dl dt{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.cl-dl dd{margin:1px 0 0;font-size:14.5px;overflow-wrap:anywhere}
+.cl-eqs{margin:0 0 10px;font:600 18px/1.2 var(--disp);font-stretch:110%}
+.cl-none{margin-top:10px}
+.facts input{width:100%;min-height:34px;padding:4px 8px;background:rgba(0,15,22,.55);border:1px solid var(--line2);border-radius:3px;font-weight:400;transition:border-color .15s var(--ease)}
+.facts input:focus{outline:0;border-color:var(--cyan)}
+.fact-w{min-width:190px}
+
+/* Service requests */
+.st-more{display:block}
+.st-more[hidden]{display:none}
+.st-more.anim{overflow:hidden}
+.st-num{margin-top:10px;font-size:26px;font-weight:500;color:#c5fbf7}
+#stDone>p:not(.st-num){margin-top:8px;color:var(--ink2)}
+#stDone b{font-weight:500;color:var(--ink)}
+.st-aviso{margin-top:12px;font-size:13px;color:var(--amber)}
+#solL{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px;align-items:start}
+.st-card{display:grid;gap:8px;padding:16px 18px}
+.st-card h3{margin:0;font:600 18px/1.2 var(--disp);font-stretch:110%}
+.st-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.st-h b{font-weight:500}
+.st-h time{margin-left:auto;font-size:12px;color:var(--ink3)}
+.st-msg{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2)}
+.st-who{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 18px;margin:2px 0 0}
+.st-who dt{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.st-who dd{margin:1px 0 0;font-size:15px}
+.st-tel{padding:0;min-height:0;font:500 16px var(--mono)}
+.st-nota{margin-top:2px}
+.st-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.st-acts .btn{min-height:42px;text-decoration:none}
+.st-none{grid-column:1/-1;padding:18px;color:var(--ink2)}
+
+/* Client view: a spare-part request expands into its detail */
 .case-row{display:grid;grid-template-columns:minmax(0,1fr) 16px;gap:2px 10px;align-items:center;width:calc(100% + 12px);margin:-4px -6px;padding:4px 6px;text-align:left;background:none;border:0;border-radius:3px;transition:background-color .15s var(--ease)}
 .case-row:hover{background:rgba(80,186,183,.07)}
 .case-row>.tl-h,.case-row>.sm{grid-column:1;min-width:0}
@@ -590,8 +636,9 @@ textarea[aria-invalid="true"],.fc-ob textarea[aria-invalid="true"]{border-color:
 .btn.ghost:hover{background:rgba(80,186,183,.12);border-color:var(--cyan)}
 dialog{width:min(540px,94vw);max-height:90svh;overflow:auto;padding:0;background:rgba(2,26,36,.86);-webkit-backdrop-filter:blur(16px) saturate(125%);backdrop-filter:blur(16px) saturate(125%);border:1px solid var(--steel);border-radius:4px;color:var(--ink)}
 dialog::backdrop{background:rgba(0,10,16,.72)}
-#dlgF{padding:22px;display:block}
-#dlgF h3{font:700 22px/1.15 var(--disp);font-stretch:112%}
+#dlgF,#stF,#stDone,#rolF{padding:22px;display:block}
+#stF[hidden],#stDone[hidden]{display:none}
+#dlgF h3,#stF h3,#stDone h3,#rolF h3{font:700 22px/1.15 var(--disp);font-stretch:112%}
 .d-sub{font-size:12px;color:var(--ink2);margin-top:4px}
 .opts{display:grid;gap:7px;margin-top:14px}
 .opts:empty{display:none}
@@ -721,7 +768,7 @@ dialog::backdrop{background:rgba(0,10,16,.72)}
   .pz-tl{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:8px}
   .ch-m{max-width:92%}
   .mb-g{grid-template-columns:minmax(0,1fr)}
-  .cc-mails{padding:0 9px}
+  .cc-mails,.cc-rol{padding:0 9px;font-size:12.5px;min-height:38px}
   .cc-mails .t-lg{display:none}
   .cc-mails .t-sm{display:inline}
   #mailIn{padding:14px}

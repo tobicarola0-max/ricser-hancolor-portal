@@ -2,7 +2,7 @@
    All data lives in Ricser (js/store.js), so every change here reaches the client portal, the internal panel and
    the tracker. The factory never sees the client's name, prices or internal notes. */
 window.Fabrica = (() => {
-  const { TYPES, EQ, EV, ROLES, LIMITS, fmt, esc, warranty, updateEvent, addEvidence, removeEvidence, addMessage, sendToFactory } = Ricser;
+  const { TYPES, EQ, EV, ROLES, LIMITS, getRol, clName, fmt, esc, warranty, updateEvent, addEvidence, removeEvidence, addMessage, sendToFactory } = Ricser;
   const STEPS = TYPES.repuesto.steps;
   const motion = () => !!window.gsap && !document.documentElement.classList.contains('static');
   const CHEVRON = '<svg class="fc-ch" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>';
@@ -10,7 +10,7 @@ window.Fabrica = (() => {
 
   // View state that must survive a repaint: open rows, selected evidence, who is writing in each chat
   const ui = new Map();
-  const st = id => { if (!ui.has(id)) ui.set(id, { open: false, ev: null, rol: 'tec', file: null }); return ui.get(id); };
+  const st = id => { if (!ui.has(id)) ui.set(id, { open: false, ev: null, rol: 'ricser', file: null }); return ui.get(id); };
   const byId = id => EV.find(e => e.id === id);
   const eqOf = e => EQ.find(q => q.id === e.eq);
   const cardOf = id => root.querySelector(`.fc[data-id="${id}"]`);
@@ -38,7 +38,7 @@ window.Fabrica = (() => {
 
   /* ---------- Panel ---------- */
   function panelMarkup(e) {
-    const q = eqOf(e), w = warranty(q);
+    const q = eqOf(e), w = warranty(q), soloFab = getRol() === 'fab', admin = getRol() === 'admin';
     const facts = [['Código', e.caso], ['Equipo', q.m], ['Serie', q.s], ['Instalación', fmt(q.inst)], ['Garantía', `${w.valid ? 'Vigente' : 'Vencida'} · hasta ${fmt(q.gar)}`], ['Pieza reclamada', e.ti], ['Estado', STEPS[e.s]]];
     return `<div class="fc-in">
       <div class="fc-top"><h4>Así lo ve la fábrica</h4><dl class="fc-sum">${facts.map(f => `<div><dt>${f[0]}</dt><dd data-f="${f[0]}">${esc(f[1])}</dd></div>`).join('')}</dl></div>
@@ -46,25 +46,25 @@ window.Fabrica = (() => {
         <section class="fc-sec" aria-labelledby="ev-t-${e.id}">
           <h5 id="ev-t-${e.id}">Evidencia</h5>
           <div class="ev-box">${evidenceMarkup(e)}</div>
-          <div class="ev-up">
+          ${soloFab ? '' : `<div class="ev-up">
             <label class="btn ghost ev-btn">Cargar video o foto<input class="sr" type="file" accept="video/*,image/*" data-up="${e.id}"></label>
             <small>Video hasta ${LIMITS.video} MB, foto hasta ${LIMITS.imagen} MB.</small>
-          </div>
+          </div>`}
           <p class="f-err" role="alert" data-err="ev"></p>
         </section>
         <section class="fc-sec" aria-labelledby="ob-t-${e.id}">
           <h5 id="ob-t-${e.id}">Observación técnica</h5>
           <label class="f fc-ob"><span>Qué ocurre con la pieza o el equipo. Obligatoria para enviar el caso.</span>
-            <textarea rows="5" data-obs="${e.id}" aria-describedby="ob-e-${e.id}" required>${esc(e.fab.obs)}</textarea></label>
+            <textarea rows="5" data-obs="${e.id}" aria-describedby="ob-e-${e.id}" required${soloFab ? ' readonly' : ''}>${esc(e.fab.obs)}</textarea></label>
           <p class="f-err" id="ob-e-${e.id}" role="alert" data-err="obs"></p>
-          <div class="fc-send"><button type="button" class="btn" data-send="${e.id}"${sent(e) ? ' disabled' : ''}>${sent(e) ? 'Enviado a fábrica' : 'Enviar a fábrica'}</button>${sent(e) && e.fab.enviadoEl ? `<small>${fmt(e.fab.enviadoEl)}</small>` : ''}</div>
+          <div class="fc-send"${soloFab ? ' hidden' : ''}><button type="button" class="btn" data-send="${e.id}"${sent(e) ? ' disabled' : ''}>${sent(e) ? 'Enviado a fábrica' : 'Enviar a fábrica'}</button>${sent(e) && e.fab.enviadoEl ? `<small>${fmt(e.fab.enviadoEl)}</small>` : ''}</div>
         </section>
         <section class="fc-sec fc-chat" aria-labelledby="ch-t-${e.id}">
           <h5 id="ch-t-${e.id}">Chat interno del caso</h5>
           <ol class="ch-th" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Mensajes del caso ${esc(e.caso)}" data-lenis-prevent>${e.fab.chat.length ? e.fab.chat.map(msgMarkup).join('') : '<li class="ch-empty">Todavía no hay mensajes.</li>'}</ol>
           <form class="ch-f" data-chat="${e.id}">
-            <label class="ch-rol">Escribís como
-              <select data-rol="${e.id}">${Object.keys(ROLES).map(k => `<option value="${k}"${k === st(e.id).rol ? ' selected' : ''}>${ROLES[k].rol}</option>`).join('')}</select></label>
+            ${admin ? `<label class="ch-rol">Escribís como
+              <select data-rol="${e.id}">${Object.keys(ROLES).map(k => `<option value="${k}"${k === st(e.id).rol ? ' selected' : ''}>${ROLES[k].rol}</option>`).join('')}</select></label>` : ''}
             <textarea rows="2" aria-label="Mensaje" placeholder="Escribí un mensaje. Enter envía, Mayús + Enter baja de línea."></textarea>
             <div class="ch-acts">
               <label class="btn ghost ch-att"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 7.500l-5.300 5.300a3 3 0 0 1-4.300-4.300l5.800-5.800a2 2 0 0 1 2.900 2.900l-5.700 5.700a1 1 0 0 1-1.500-1.400l5-5"/></svg>Adjuntar<input class="sr" type="file" accept="video/*,image/*,application/pdf" data-att="${e.id}"></label>
@@ -76,7 +76,8 @@ window.Fabrica = (() => {
         </section>
         <section class="fc-sec fc-pieza" aria-labelledby="pz-t-${e.id}">
           <h5 id="pz-t-${e.id}">Seguimiento de la pieza</h5>
-          <p class="sm">Editable por Ricser. Cada avance actualiza el seguimiento y el portal del cliente, y le manda un mail.</p>
+          <p class="sm">Editable por Ricser. El cliente ve tres etapas: Solicitada, Despachada y Reemplazada. Le llega un mail cuando cambia alguna, la guía o la fecha.</p>
+          <fieldset class="pz-fs"${soloFab ? ' disabled' : ''}>
           <ol class="pz-tl">${STEPS.map((n, i) => `<li><button type="button" data-stage="${i}" data-id="${e.id}"><b>${esc(n)}</b><small></small></button></li>`).join('')}</ol>
           <p class="f-err" role="alert" data-err="pz"></p>
           <div class="pz-f">
@@ -85,6 +86,7 @@ window.Fabrica = (() => {
             <label class="f">Llegada estimada (ETA)<input type="date" data-k="eta" data-id="${e.id}" value="${esc(e.eta || '')}"></label>
             <label class="f">Notas para el cliente<input data-k="notas" data-id="${e.id}" value="${esc(e.notas || '')}" autocomplete="off"></label>
           </div>
+          </fieldset>
           <div class="pz-mail" data-mail></div>
         </section>
       </div>
@@ -203,15 +205,18 @@ window.Fabrica = (() => {
     if (!sent(e) && i > 0) { setErr(card, 'pz', 'Primero enviá el caso a fábrica: la pieza no avanza sin observación técnica.'); return; }
     setErr(card, 'pz', '');
     if (i === e.s) return;
+    const mails = Notifier.outbox.length;
     updateEvent(id, 's', i, 'fab');
     syncHead(e); syncPieza(e);
+    if (Notifier.outbox.length === mails) api.toast?.(`Etapa interna actualizada. El cliente sigue viendo "${clName(e)}".`);
   }
 
   async function onChat(form) {
     const id = Number(form.dataset.chat), s = st(id), ta = form.querySelector('textarea'), txt = ta.value.trim();
     if (!txt && !s.file) { setErr(form, 'chat', 'Escribí un mensaje o adjuntá un archivo.'); ta.focus(); return; }
     setErr(form, 'chat', '');
-    const m = await addMessage(id, { rol: s.rol, txt, file: s.file });
+    const quien = { admin: s.rol, fab: 'fab' }[getRol()] || 'tec'; // only an administrator writes on behalf of someone else
+    const m = await addMessage(id, { rol: quien, txt, file: s.file });
     s.file = null; ta.value = '';
     form.querySelector('[data-file]').textContent = '';
     const th = cardOf(id).querySelector('.ch-th');

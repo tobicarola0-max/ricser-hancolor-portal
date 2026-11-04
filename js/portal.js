@@ -1,7 +1,7 @@
 /* Scene 5: Portal del cliente. Four functional views ported from "Portal de servicio técnico.html":
    client portal, internal panel, manufacturer portal and the data model. */
 window.Portal = (() => {
-  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, codeOf, addEvidence, removeEvidence, checkFile, LIMITS } = Ricser;
+  const { TG, ICON, TYPES, REM, EQ, EV, DB, EQUIPOS, fmt, num, esc, done, warranty, eqStatus, on, emit, addEvent, updateEvent, codeOf, addEvidence, removeEvidence, checkFile, LIMITS, ACCESOS, CLIENTE, getRol, setRol, onRol, clStep, clDate, updateEquipo } = Ricser;
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
   let cur = 'e1', dtype = '', toastTimer = 0;
@@ -12,67 +12,83 @@ window.Portal = (() => {
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 3200);
   };
 
-  /* ---------- CLIENT ---------- */
+  /* ---------- CLIENT ----------
+     The client sees its own details, machines, open services and orders, in three stages. Warranty, hours of use and
+     the internal steps are only for technicians and administration, who open this same tab with everything. */
+  const full = () => getRol() !== 'cliente';
+  const stepsOf = v => (full() ? TYPES[v.t].steps : TYPES[v.t].cl);
+  const stepOf = v => (full() ? v.s : clStep(v));
+  const typeName = v => (full() ? TYPES[v.t].n : TYPES[v.t].cn);
+  const dateOf = (v, i) => (full() ? (v.hist && i <= v.s ? v.hist[i] || '' : '') : clDate(v, i));
+
+  function renderDatos() {
+    const rows = [['Empresa', CLIENTE.nombre], ['CUIT', CLIENTE.cuit], ['Contacto', CLIENTE.contacto], ['Teléfono', CLIENTE.telefono], ['Email', CLIENTE.email], ['Planta', CLIENTE.planta]];
+    $('#misDatos').innerHTML = `<div class="panel glass cl-datos"><h3>Mis datos</h3><dl class="cl-dl">${rows.map(r => `<div><dt>${r[0]}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl></div>`;
+  }
+
   function renderEqs() {
-    $('#eqs').innerHTML = EQ.map(e => {
+    $('#eqs').innerHTML = `<h3 class="cl-eqs">Mis equipos</h3>${EQ.map(e => {
       const open = EV.filter(v => v.eq === e.id && !done(v)).length;
-      const w = warranty(e), st = eqStatus(e);
+      const w = warranty(e), st = eqStatus(e, !full());
+      const info = full()
+        ? `<span class="eq-m mono"><span>${num(e.h)} h</span><span>${w.valid ? 'Garantía ' + Math.round(w.pct) + '%' : 'Sin garantía'}</span></span>
+          <span class="bar" aria-hidden="true"><i class="${w.valid ? '' : 'over'}" style="width:${w.pct}%"></i></span>`
+        : `<span class="eq-s">Instalado el ${fmt(e.inst)}</span>`;
       return `<button class="eq glass" data-id="${e.id}" aria-current="${e.id === cur}">
         <span class="eq-img"><img src="${e.img}" alt="" width="${e.iw}" height="${e.ih}" loading="lazy"></span>
         <span class="eq-b">
           <b>${esc(e.m)}</b>
           <span class="mono eq-s">${esc(e.s)}</span>
-          <span class="eq-m mono"><span>${num(e.h)} h</span><span>${w.valid ? 'Garantía ' + Math.round(w.pct) + '%' : 'Sin garantía'}</span></span>
-          <span class="bar" aria-hidden="true"><i class="${w.valid ? '' : 'over'}" style="width:${w.pct}%"></i></span>
+          ${info}
           <span class="pills"><span class="pill ${st.c}">${st.t}</span>${open ? `<span class="pill">${open} en curso</span>` : ''}</span>
         </span>
       </button>`;
-    }).join('');
+    }).join('')}`;
   }
 
-  function tracker(v, T) {
-    const n = T.steps.length;
+  function tracker(v) {
+    const T = TYPES[v.t], steps = stepsOf(v), at = stepOf(v), n = steps.length;
     if (n < 2) return '';
     if (T.v) {
-      const p = done(v) ? 100 : v.s / (n - 1) * 100;
-      const icon = v.t === 'repuesto' && v.s >= 4 ? 'truck' : T.v;
+      const p = done(v) ? 100 : at / (n - 1) * 100;
+      const icon = v.t === 'repuesto' && at >= n - (full() ? 2 : 1) ? 'truck' : T.v;
       return `<div class="trk ${icon}"><div class="rail"><i style="width:${p}%"></i><span class="vh" style="left:${p}%">${ICON[icon]}</span></div>
-        <div class="lbl">${T.steps.map((s, k) => `<span class="${k === v.s ? 'n' : ''}">${esc(s)}</span>`).join('')}</div></div>`;
+        <div class="lbl">${steps.map((s, k) => `<span class="${k === at ? 'n' : ''}">${esc(s)}</span>`).join('')}</div></div>`;
     }
-    return `<div class="steps">${T.steps.map((s, k) => `<div class="${k < v.s || done(v) ? 'd' : k === v.s ? 'n' : ''}">${esc(s)}</div>`).join('')}</div>`;
+    return `<div class="steps">${steps.map((s, k) => `<div class="${k < at || done(v) ? 'd' : k === at ? 'n' : ''}">${esc(s)}</div>`).join('')}</div>`;
   }
 
-  /* A warranty claim in the client's history expands into its own detail: stages, shipment and the client's own
-     videos and photos. The internal chat, the technical note and editing the stages stay in the factory view. */
+  /* A spare-part request in the history expands into its own detail: stages, shipment and the client's own videos and
+     photos. The internal chat, the technical note and editing the stages stay in the factory view. */
   const openCases = new Set(), caseEv = new Map();
   const CHEVRON = '<svg class="fc-ch" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>';
 
   function caseMedia(v) {
     const list = v.fab.evidencia.filter(x => x.por === 'Cliente');
-    if (!list.length) return '<div class="ev-empty cd-empty">Todavía no cargaste videos ni fotos de este reclamo.</div>';
-    const cur = list.find(x => x.id === caseEv.get(v.id)) || list[list.length - 1];
-    const media = cur.tipo === 'video'
-      ? `<video src="${cur.url}" controls playsinline preload="metadata" aria-label="Tu registro: ${esc(cur.nombre)}"></video>`
-      : `<img src="${cur.url}" alt="Tu registro: ${esc(cur.nombre)}">`;
-    return `<div class="ev-view">${media}</div><ul class="ev-list">${list.map(x => `<li><button type="button" class="chip" data-cev="${x.id}" data-case="${v.id}" aria-pressed="${x.id === cur.id}">${x.tipo === 'video' ? 'Video' : 'Foto'} · ${esc(x.nombre)}</button><button type="button" class="ev-x" data-cevx="${x.id}" data-case="${v.id}" aria-label="Quitar ${esc(x.nombre)}">×</button></li>`).join('')}</ul>`;
+    if (!list.length) return '<div class="ev-empty cd-empty">Todavía no cargaste videos ni fotos de este pedido.</div>';
+    const sel = list.find(x => x.id === caseEv.get(v.id)) || list[list.length - 1];
+    const media = sel.tipo === 'video'
+      ? `<video src="${sel.url}" controls playsinline preload="metadata" aria-label="Tu registro: ${esc(sel.nombre)}"></video>`
+      : `<img src="${sel.url}" alt="Tu registro: ${esc(sel.nombre)}">`;
+    return `<div class="ev-view">${media}</div><ul class="ev-list">${list.map(x => `<li><button type="button" class="chip" data-cev="${x.id}" data-case="${v.id}" aria-pressed="${x.id === sel.id}">${x.tipo === 'video' ? 'Video' : 'Foto'} · ${esc(x.nombre)}</button><button type="button" class="ev-x" data-cevx="${x.id}" data-case="${v.id}" aria-label="Quitar ${esc(x.nombre)}">×</button></li>`).join('')}</ul>`;
   }
 
-  function caseRow(v, T) {
-    const open = openCases.has(v.id);
+  function caseRow(v) {
+    const T = TYPES[v.t], open = openCases.has(v.id), steps = stepsOf(v), at = stepOf(v);
     const facts = [['Pieza', v.ti], ['Falla informada', v.falla || 'Sin detalle'], ['Guía aérea', v.guia || 'Pendiente de fábrica'], ['Transportista', v.carrier || 'A confirmar'], ['Llegada estimada', v.eta ? fmt(v.eta) : 'A confirmar']];
     return `<li style="--c:${T.c}">
       <button type="button" class="case-row" data-case-id="${v.id}" aria-expanded="${open}" aria-controls="cd-${v.id}">
-        <span class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(T.steps[v.s])}</span></span>
-        <span class="sm">${T.n} · ${fmt(v.d)} · <span class="case mono">${esc(v.caso)}</span>${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}${v.carrier ? ` · ${esc(v.carrier)}` : ''}${v.eta ? ` · Llega el ${fmt(v.eta)}` : ''}</span>
+        <span class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(steps[at])}</span></span>
+        <span class="sm">${typeName(v)} · ${fmt(v.d)} · <span class="case mono">${esc(v.caso)}</span>${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}${v.carrier ? ` · ${esc(v.carrier)}` : ''}${v.eta ? ` · Llega el ${fmt(v.eta)}` : ''}</span>
         ${CHEVRON}
       </button>
       ${v.notas ? `<p class="sm">${esc(v.notas)}</p>` : ''}
-      ${tracker(v, T)}
+      ${tracker(v)}
       <div class="case-detail" id="cd-${v.id}"${open ? '' : ' hidden'}>
         <div class="cd-in">
           <dl class="fc-sum">${facts.map(f => `<div><dt>${f[0]}</dt><dd>${esc(f[1])}</dd></div>`).join('')}</dl>
-          <ol class="pz-tl">${T.steps.map((n, i) => `<li class="${i < v.s ? 'd' : i === v.s ? 'n' : ''}"${i === v.s ? ' aria-current="step"' : ''}><span class="pz-b"><b>${esc(n)}</b><small>${v.hist && v.hist[i] && i <= v.s ? fmt(v.hist[i]) : ''}</small></span></li>`).join('')}</ol>
-          <section class="cd-ev" aria-label="Tus videos y fotos del reclamo ${esc(v.caso)}">
+          <ol class="pz-tl" style="--n:${steps.length}">${steps.map((n, i) => `<li class="${i < at ? 'd' : i === at ? 'n' : ''}"${i === at ? ' aria-current="step"' : ''}><span class="pz-b"><b>${esc(n)}</b><small>${dateOf(v, i) ? fmt(dateOf(v, i)) : ''}</small></span></li>`).join('')}</ol>
+          <section class="cd-ev" aria-label="Tus videos y fotos del pedido ${esc(v.caso)}">
             <h4>Tus videos y fotos</h4>
             <div class="ev-box">${caseMedia(v)}</div>
             <div class="ev-up"><label class="btn ghost ev-btn">Cargar video o foto<input class="sr" type="file" accept="video/*,image/*" data-cup="${v.id}"></label><small>Video hasta ${LIMITS.video} MB, foto hasta ${LIMITS.imagen} MB.</small></div>
@@ -81,6 +97,17 @@ window.Portal = (() => {
         </div>
       </div>
       <button class="link" data-track="${esc(v.caso)}">Ver en seguimiento</button>
+    </li>`;
+  }
+
+  function evRow(v) {
+    if (v.t === 'repuesto') return caseRow(v);
+    const T = TYPES[v.t], code = codeOf(v);
+    return `<li style="--c:${T.c}">
+      <div class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(stepsOf(v)[stepOf(v)])}</span></div>
+      <p class="sm">${typeName(v)} · ${fmt(v.d)}${code ? ` · <span class="case mono">${esc(code)}</span>` : ''}</p>
+      ${tracker(v)}
+      ${T.v && code ? `<button class="link" data-track="${esc(code)}">Ver en seguimiento</button>` : ''}
     </li>`;
   }
 
@@ -101,8 +128,14 @@ window.Portal = (() => {
   }
 
   function renderDet() {
-    const e = EQ.find(x => x.id === cur), w = warranty(e), st = eqStatus(e);
+    const e = EQ.find(x => x.id === cur), w = warranty(e), st = eqStatus(e, !full());
     const evs = EV.filter(v => v.eq === cur).sort((x, y) => y.d.localeCompare(x.d) || y.id - x.id);
+    const block = (title, list, empty) => `<div class="panel glass"><h3>${title}</h3>${list.length ? `<ul class="tl">${list.map(evRow).join('')}</ul>` : `<p class="sm cl-none">${empty}</p>`}</div>`;
+    const historia = full()
+      ? block('Historial y seguimiento', evs, 'Sin movimientos.')
+      : block('Servicios abiertos', evs.filter(v => v.t !== 'insumo' && !done(v)), 'No tenés servicios abiertos para este equipo.')
+        + block('Pedidos', evs.filter(v => v.t === 'insumo'), 'Todavía no hiciste pedidos para este equipo.')
+        + block('Historial', evs.filter(v => v.t !== 'insumo' && done(v)), 'Todavía no hay servicios cerrados.');
     $('#det').innerHTML = `
     <div class="panel glass det-hero">
       <div class="det-img"><img src="${e.img}" alt="${esc(e.m)}" width="${e.iw}" height="${e.ih}"></div>
@@ -110,44 +143,31 @@ window.Portal = (() => {
         <div class="det-t"><h3>${esc(e.m)}</h3><span class="pill ${st.c}">${st.t}</span></div>
         <dl class="facts">
           <div><dt>Número de serie</dt><dd class="mono">${esc(e.s)}</dd></div>
-          <div><dt>Uso acumulado</dt><dd class="mono">${num(e.h)} h</dd></div>
           <div><dt>Instalado el</dt><dd>${fmt(e.inst)}</dd></div>
-          <div><dt>Garantía hasta</dt><dd>${fmt(e.gar)}</dd></div>
+          <div class="fact-w"><dt>Cabezal</dt><dd>${full() ? `<input data-eqk="cabezal" data-id="${e.id}" value="${esc(e.cabezal)}" aria-label="Cabezal de ${esc(e.m)}" autocomplete="off">` : esc(e.cabezal)}</dd></div>
+          ${full() ? `<div><dt>Uso acumulado</dt><dd class="mono">${num(e.h)} h</dd></div><div><dt>Garantía hasta</dt><dd>${fmt(e.gar)}</dd></div>` : ''}
         </dl>
-        <div class="bar big" role="img" aria-label="Garantía consumida ${Math.round(w.pct)}%"><i class="${w.valid ? '' : 'over'}" style="width:${w.pct}%"></i></div>
-        <p class="sm">${w.valid ? 'Garantía consumida: ' + Math.round(w.pct) + '%' : 'Garantía vencida. Los repuestos y visitas tienen costo.'}</p>
+        ${full() ? `<div class="bar big" role="img" aria-label="Garantía consumida ${Math.round(w.pct)}%"><i class="${w.valid ? '' : 'over'}" style="width:${w.pct}%"></i></div>
+        <p class="sm">${w.valid ? 'Garantía consumida: ' + Math.round(w.pct) + '%' : 'Garantía vencida. Los repuestos y visitas tienen costo.'}</p>` : ''}
       </div>
     </div>
     <div class="panel glass">
       <h3>¿Qué necesitás?</h3>
       <div class="acts">
-        <button class="act" data-t="repuesto"><b>Reclamo de garantía</b><span>Le pedimos a la fábrica que envíe la pieza</span><em>${w.valid ? 'Recibís un número de caso' : 'Se cotiza'}</em></button>
+        <button class="act" data-t="repuesto"><b>${full() ? 'Reclamo de garantía' : 'Pedir un repuesto'}</b><span>Le pedimos a la fábrica que envíe la pieza</span><em>${full() && !w.valid ? 'Se cotiza' : 'Recibís un número de caso'}</em></button>
         <button class="act" data-t="remoto"><b>Soporte remoto</b><span>Migración, calibración o capacitación</span><em>Desde USD 50</em></button>
         <button class="act" data-t="visita"><b>Visita técnica</b><span>Un técnico va a tu planta</span><em>Se cotiza según zona</em></button>
         <button class="act" data-t="insumo"><b>Pedir insumos</b><span>Tintas, cabezales, consumibles</span><em>Con tu lista de precios</em></button>
       </div>
     </div>
-    <div class="panel glass">
-      <h3>Historial y seguimiento</h3>
-      <ul class="tl">${evs.map(v => {
-        const T = TYPES[v.t], code = codeOf(v);
-        if (v.t === 'repuesto') return caseRow(v, T);
-        return `<li style="--c:${T.c}">
-          <div class="tl-h"><b>${esc(v.ti)}</b><span class="pill ${done(v) ? 'ok' : ''}">${esc(T.steps[v.s])}</span></div>
-          <p class="sm">${T.n} · ${fmt(v.d)}${code ? ` · <span class="case mono">${esc(code)}</span>` : ''}${v.guia ? ` · <span class="mono">${esc(v.guia)}</span>` : ''}${v.carrier ? ` · ${esc(v.carrier)}` : ''}${v.eta ? ` · Llega el ${fmt(v.eta)}` : ''}</p>
-          ${v.notas ? `<p class="sm">${esc(v.notas)}</p>` : ''}
-          ${tracker(v, T)}
-          ${T.v && code ? `<button class="link" data-track="${esc(code)}">Ver en seguimiento</button>` : ''}
-        </li>`;
-      }).join('')}</ul>
-    </div>`;
+    ${historia}`;
   }
 
   /* ---------- DIALOG ---------- */
   function openDlg(t) {
     dtype = t;
     const e = EQ.find(x => x.id === cur);
-    $('#dt').textContent = TYPES[t].n;
+    $('#dt').textContent = full() ? TYPES[t].n : TYPES[t].cn;
     $('#dsub').textContent = e.m + ' · ' + e.s;
     $('#note').value = '';
     let o = '', x = '';
@@ -170,7 +190,7 @@ window.Portal = (() => {
 
   function upd() {
     const r = document.querySelector('input[name=o]:checked');
-    $('#tot').textContent = dtype === 'remoto' && r ? 'Total: USD ' + REM[r.value].p : dtype === 'repuesto' ? 'Sin costo si está en garantía' : 'Te enviamos cotización';
+    $('#tot').textContent = dtype === 'remoto' && r ? 'Total: USD ' + REM[r.value].p : dtype === 'repuesto' ? (full() ? 'Sin costo si está en garantía' : 'Te avisamos cómo sigue') : 'Te enviamos cotización';
   }
 
   function submitDlg(ev) {
@@ -206,7 +226,7 @@ window.Portal = (() => {
       ['mg', 'Margen', rev ? Math.round((rev - cost) / rev * 100) : 0, '%'],
     ];
     const box = $('#kpis');
-    if (!box.children.length) box.innerHTML = vals.map(k => `<div class="kpi glass" data-k="${k[0]}"><b class="mono">0</b><span>${k[1]}</span></div>`).join('');
+    if (!box.children.length) box.innerHTML = vals.map(k => `<div class="kpi glass" data-k="${k[0]}"${k[0] === 'rev' || k[0] === 'mg' ? ' data-admin' : ''}><b class="mono">0</b><span>${k[1]}</span></div>`).join('');
     vals.forEach(k => {
       const el = box.querySelector(`[data-k=${k[0]}] b`);
       const from = Number(el.dataset.v || 0), to = k[2];
@@ -229,9 +249,9 @@ window.Portal = (() => {
         <td>${esc(e.ti)}<span class="sm">${T.n}${code ? ' · ' + esc(code) : ''}</span></td>
         <td><select data-id="${e.id}" data-k="s" ${aria('Estado')}>${T.steps.map((s, k) => `<option value="${k}" ${k === e.s ? 'selected' : ''} ${e.fab && e.fab.estado !== 'enviado' && k > 0 ? 'disabled' : ''}>${esc(s)}</option>`).join('')}</select></td>
         <td><input data-id="${e.id}" data-k="tec" value="${esc(e.tec)}" ${aria('Técnico')}></td>
-        <td><input class="num" type="number" min="0" data-id="${e.id}" data-k="cost" value="${e.cost}" ${aria('Costo en USD')}></td>
-        <td><input class="num" type="number" min="0" data-id="${e.id}" data-k="price" value="${e.price}" ${aria('Precio en USD')}></td>
-        <td class="mono mg">${margin(e)}</td>
+        <td data-admin><input class="num" type="number" min="0" data-id="${e.id}" data-k="cost" value="${e.cost}" ${aria('Costo en USD')}></td>
+        <td data-admin><input class="num" type="number" min="0" data-id="${e.id}" data-k="price" value="${e.price}" ${aria('Precio en USD')}></td>
+        <td class="mono mg" data-admin>${margin(e)}</td>
         <td class="note-c"><input data-id="${e.id}" data-k="note" value="${esc(e.note)}" ${aria('Nota interna')}></td>
       </tr>`;
     }).join('');
@@ -267,7 +287,7 @@ window.Portal = (() => {
   const ER_POS = {
     usuarios_y_roles: [110, 44], clientes: [330, 44], equipos: [550, 44], eventos_servicio: [790, 44],
     casos_garantia: [130, 176], servicios_remotos: [370, 176], visitas_tecnicas: [610, 176], pedidos_insumos: [860, 176],
-    repuestos_solicitados: [130, 296], notificaciones: [370, 296],
+    repuestos_solicitados: [130, 296], notificaciones: [370, 296], solicitudes_servicio: [610, 296],
   };
   let dbFilter = 'all', dbSel = null;
 
@@ -340,13 +360,23 @@ window.Portal = (() => {
 
   /* ---------- WIRING ---------- */
   function renderAll(src) {
-    renderEqs(); renderDet();
+    renderDatos(); renderEqs(); renderDet();
     // Editing a row must not rebuild the table you are typing in, or keyboard focus would be lost
     if (src !== 'int') renderInt(); else renderKpis();
     if (src !== 'fab') Fabrica.render();
   }
 
-  function setView(id, focus) {
+  /* What each person can open. Prototype: it changes what is shown, it does not protect the data */
+  function applyRol() {
+    const r = getRol(), vistas = ACCESOS[r].vistas;
+    $$('.cc-tabs [role=tab]').forEach(t => { t.hidden = !vistas.includes(t.dataset.v); });
+    $('#rolBtn').textContent = r === 'cliente' ? 'Acceso interno' : `${ACCESOS[r].n} · Salir`;
+    const act = $('.cc-tabs [aria-selected="true"]').dataset.v;
+    setView(vistas.includes(act) ? act : vistas[0], false, true);
+    renderAll();
+  }
+
+  function setView(id, focus, quiet) {
     $$('.cc-tabs [role=tab]').forEach(x => {
       const on = x.dataset.v === id;
       x.setAttribute('aria-selected', on);
@@ -358,8 +388,8 @@ window.Portal = (() => {
       v.classList.toggle('on', on);
       v.hidden = !on;
     });
-    $('#mailsBtn').hidden = id === 'fab';
-    if (motion()) gsap.fromTo(`#${id} > *`, { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .4, stagger: .05, ease: 'power3.out', clearProps: 'transform,opacity,visibility' });
+    $('#mailsBtn').hidden = id === 'fab' || ['cliente', 'fab'].includes(getRol());
+    if (motion() && !quiet) gsap.fromTo(`#${id} > *`, { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .4, stagger: .05, ease: 'power3.out', clearProps: 'transform,opacity,visibility' });
   }
 
   function init() {
@@ -377,6 +407,8 @@ window.Portal = (() => {
       if (t) { Tracker.search(t.dataset.track, { deferPlay: true }); window.Cinema?.go('s4'); }
     });
     $('#det').addEventListener('change', async e => {
+      const k = e.target.closest('[data-eqk]');
+      if (k) { updateEquipo(k.dataset.id, k.dataset.eqk, k.value.trim()); toast('Guardado. El cliente ya ve el cambio.'); return; }
       const input = e.target.closest('[data-cup]');
       if (!input) return;
       const id = Number(input.dataset.cup), file = input.files[0];
@@ -408,6 +440,24 @@ window.Portal = (() => {
       if (Notifier.outbox.length === mails) toast('Guardado. El cliente ya ve el cambio.'); // otherwise the mail toast already said it
     });
     Fabrica.init({ toast, openInbox });
+    Servicio.init({ toast });
+    $('#rolBtn').addEventListener('click', () => {
+      if (getRol() !== 'cliente') { setRol('cliente'); toast('Saliste del acceso interno.'); return; }
+      $('#rolDlg').showModal();
+      window.__lenis?.stop();
+      if (motion()) gsap.fromTo('#rolF', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .35, ease: 'power3.out', clearProps: 'transform,opacity' });
+    });
+    $('#rolF').addEventListener('submit', e => {
+      e.preventDefault();
+      const r = $('#rolSel').value;
+      $('#rolDlg').close();
+      setRol(r);
+      setView(ACCESOS[r].vistas[0]);
+      toast(`Entraste como ${ACCESOS[r].n}.`);
+    });
+    $('#rolCx').addEventListener('click', () => $('#rolDlg').close());
+    $('#rolDlg').addEventListener('close', () => window.__lenis?.start());
+    $('#rolDlg').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
     $('#mbList').addEventListener('click', e => { const b = e.target.closest('[data-mail]'); if (b) { mailSel = Number(b.dataset.mail); renderInbox(); } });
     Notifier.on(m => { renderInbox(); if (m.estado !== 'error') toast(`Mail enviado a ${m.toName}`); else toast(`No se pudo enviar el mail a ${m.toName}`); });
     renderInbox();
@@ -419,7 +469,7 @@ window.Portal = (() => {
     const tabs = $('.cc-tabs');
     tabs.addEventListener('click', e => { const b = e.target.closest('[role=tab]'); if (b) setView(b.dataset.v); });
     tabs.addEventListener('keydown', e => {
-      const list = $$('.cc-tabs [role=tab]'), i = list.indexOf(document.activeElement);
+      const list = $$('.cc-tabs [role=tab]:not([hidden])'), i = list.indexOf(document.activeElement);
       if (i < 0) return;
       const n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? list.length - 1 : null;
       if (n === null) return;
@@ -432,8 +482,10 @@ window.Portal = (() => {
     $('#erMap').addEventListener('click', e => { const g = e.target.closest('[data-t]'); if (g) pick(g.dataset.t); });
     $('#erMap').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const g = e.target.closest('[data-t]'); if (!g) return; e.preventDefault(); const name = g.dataset.t; pick(name); $(`#erMap [data-t=${name}]`)?.focus(); });
 
-    renderAll(); renderDb(); fleet();
+    renderDb(); fleet();
     on(renderAll);
+    onRol(applyRol);
+    applyRol();
   }
 
   return { init, toast };

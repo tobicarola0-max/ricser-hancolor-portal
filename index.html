@@ -123,6 +123,7 @@
     <div class="s1-copy">
       <p class="eyebrow">Ricser SRL · Importador directo y exclusivo HanColor</p>
       <p class="s1-model">Cama plana UV 2513</p>
+      <button type="button" class="btn st-cta" id="stOpen" aria-haspopup="dialog">Solicitar servicio técnico</button>
     </div>
   </div>
 
@@ -235,11 +236,13 @@
   <div class="cc-bar">
     <div class="cc-tabs" role="tablist" aria-label="Vistas del portal">
       <button role="tab" id="tab-cli" data-v="cli" aria-controls="cli" aria-selected="true">Portal del cliente</button>
+      <button role="tab" id="tab-sol" data-v="sol" aria-controls="sol" aria-selected="false" tabindex="-1">Solicitudes <span class="mono tab-n" id="solN"></span></button>
       <button role="tab" id="tab-int" data-v="int" aria-controls="int" aria-selected="false" tabindex="-1">Panel interno</button>
       <button role="tab" id="tab-fab" data-v="fab" aria-controls="fab" aria-selected="false" tabindex="-1">Fábrica HanColor</button>
       <button role="tab" id="tab-db" data-v="db" aria-controls="db" aria-selected="false" tabindex="-1">Base de datos</button>
     </div>
     <button type="button" class="btn ghost cc-mails" id="mailsBtn" aria-haspopup="dialog" aria-label="Ver mails enviados"><span class="t-lg">Ver mails enviados</span><span class="t-sm">Mails</span><span class="mono" id="mailsN">0</span></button>
+    <button type="button" class="btn ghost cc-rol" id="rolBtn"></button>
     <p class="cc-demo">Prototipo · datos de demostración</p>
   </div>
 
@@ -247,14 +250,21 @@
     <!-- 1 · CLIENTE -->
     <section id="cli" class="view on" role="tabpanel" aria-labelledby="tab-cli">
       <div class="v-head"><div><p class="eyebrow">Portal del cliente</p><h2>Hola, Gráfica Del Plata</h2></div><p class="v-sub">Elegí un equipo para ver su historial o pedir un servicio.</p></div>
-      <div class="cli-grid"><div id="eqs" aria-label="Mis equipos"></div><div id="det"></div></div>
+      <div class="cli-grid"><div><div id="misDatos"></div><div id="eqs" role="group" aria-label="Mis equipos"></div></div><div id="det"></div></div>
+    </section>
+
+    <!-- SOLICITUDES: what comes in from the start of the site -->
+    <section id="sol" class="view" role="tabpanel" aria-labelledby="tab-sol" hidden>
+      <div class="v-head"><div><p class="eyebrow">Servicio técnico</p><h2>Solicitudes</h2></div><p class="v-sub">Lo que entró desde el inicio de la web. Tomá cada solicitud y llamá al cliente.</p></div>
+      <div class="db-filter" id="solF" role="group" aria-label="Filtrar solicitudes por estado"></div>
+      <div id="solL" aria-live="polite"></div>
     </section>
 
     <!-- 2 · INTERNO -->
     <section id="int" class="view" role="tabpanel" aria-labelledby="tab-int" hidden>
       <div class="v-head"><div><p class="eyebrow">Ricser SRL · Admin</p><h2>Panel interno</h2></div><p class="v-sub">Lo que cambies acá se refleja al instante en el portal del cliente y en el rastreo. Costos, margen y notas nunca salen de esta vista.</p></div>
       <div class="kpis" id="kpis"></div>
-      <div class="panel glass tw" data-lenis-prevent-horizontal><table><thead><tr><th>Cliente / equipo</th><th>Servicio</th><th>Estado (visible)</th><th>Técnico</th><th>Costo USD</th><th>Precio USD</th><th>Margen</th><th>Nota interna</th></tr></thead><tbody id="tick"></tbody></table></div>
+      <div class="panel glass tw" data-lenis-prevent-horizontal><table><thead><tr><th>Cliente / equipo</th><th>Servicio</th><th>Estado (visible)</th><th>Técnico</th><th data-admin>Costo USD</th><th data-admin>Precio USD</th><th data-admin>Margen</th><th>Nota interna</th></tr></thead><tbody id="tick"></tbody></table></div>
     </section>
 
     <!-- 3 · FÁBRICA -->
@@ -294,6 +304,37 @@
     <div class="d-foot"><b id="tot"></b><span class="d-acts"><button type="button" class="btn ghost" id="cx">Cancelar</button><button type="submit" class="btn" id="ok">Enviar solicitud</button></span></div>
   </form>
 </dialog>
+<dialog id="stDlg" aria-labelledby="stT" data-lenis-prevent>
+  <form id="stF" novalidate>
+    <h3 id="stT">Solicitud de servicio técnico</h3>
+    <p class="d-sub">Te llama el encargado de servicio técnico.</p>
+    <label class="f">¿Qué equipo tenés?
+      <select id="stEq" required aria-describedby="stErr"><option value="">Elegí tu equipo</option></select></label>
+    <div id="stMore" class="st-more" hidden>
+      <label class="f">Tu nombre<input id="stName" autocomplete="name" required aria-describedby="stErr"></label>
+      <label class="f">Teléfono<input id="stTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej.: 11 5555 0100" required aria-describedby="stErr"></label>
+      <label class="f">¿Qué le está pasando?<textarea id="stMsg" rows="4" placeholder="Ej.: se detiene a mitad del trabajo y marca un error" required aria-describedby="stErr"></textarea></label>
+    </div>
+    <p class="f-err" id="stErr" role="alert"></p>
+    <div class="d-foot"><span class="d-acts"><button type="button" class="btn ghost" id="stCx">Cancelar</button><button type="submit" class="btn">Enviar solicitud</button></span></div>
+  </form>
+  <div id="stDone" hidden>
+    <h3>Recibimos tu solicitud</h3>
+    <p class="st-num mono" id="stCode"></p>
+    <p>Te vamos a llamar al <b id="stTelOk"></b> para coordinar.</p>
+    <div class="d-foot"><span class="d-acts"><button type="button" class="btn" id="stClose">Listo</button></span></div>
+  </div>
+</dialog>
+<dialog id="rolDlg" aria-labelledby="rolT" data-lenis-prevent>
+  <form id="rolF">
+    <h3 id="rolT">Acceso interno</h3>
+    <p class="d-sub">Para técnicos, administración y fábrica.</p>
+    <label class="f">Ingresar como
+      <select id="rolSel"><option value="tec">Técnico</option><option value="admin">Administrador</option><option value="fab">Fábrica HanColor</option></select></label>
+    <p class="st-aviso">Prototipo: todavía sin contraseña. Antes de usarlo con clientes reales lleva inicio de sesión.</p>
+    <div class="d-foot"><span class="d-acts"><button type="button" class="btn ghost" id="rolCx">Cancelar</button><button type="submit" class="btn">Ingresar</button></span></div>
+  </form>
+</dialog>
 <dialog id="mailDlg" aria-labelledby="mbT" data-lenis-prevent>
   <div id="mailIn">
     <div class="mb-h"><h3 id="mbT">Mails enviados</h3><span class="pill ye" id="mbMode"></span><button type="button" class="btn ghost mb-x" id="mbClose">Cerrar</button></div>
@@ -314,6 +355,7 @@
 <script src="js/notifier.js"></script>
 <script src="js/tracker.js"></script>
 <script src="js/ficha.js"></script>
+<script src="js/servicio.js"></script>
 <script src="js/fabrica.js"></script>
 <script src="js/portal.js"></script>
 <script src="js/bg.js"></script>
